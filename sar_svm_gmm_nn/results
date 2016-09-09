@@ -1,0 +1,224 @@
+svm_rbm gamma 0.7
+sample count:  100 test accuracy:  0.92630480167
+sample count:  200 test accuracy:  0.932321806634
+sample count:  300 test accuracy:  0.938511095204
+sample count:  400 test accuracy:  0.944880174292
+sample count:  500 test accuracy:  0.951436993368
+sample count:  600 test accuracy:  0.958189977562
+sample count:  700 test accuracy:  0.965148063781
+sample count:  800 test accuracy:  0.97232074017
+sample count:  900 test accuracy:  0.979718089272
+sample count:  1000 test accuracy:  0.987350835322
+
+
+
+
+svm_rbm_normalization
+sample count:  100 test accuracy:  0.92630480167
+sample count:  200 test accuracy:  0.932321806634
+sample count:  300 test accuracy:  0.938511095204
+sample count:  400 test accuracy:  0.944880174292
+sample count:  500 test accuracy:  0.951436993368
+sample count:  600 test accuracy:  0.0439790575916
+sample count:  700 test accuracy:  0.965148063781
+sample count:  800 test accuracy:  0.0310717039322
+sample count:  900 test accuracy:  0.0256851996868
+sample count:  1000 test accuracy:  0.0155926809865
+
+
+svm_poly  kernel='poly', degree=9
+sample count:  100 test accuracy:  0.999860821155
+sample count:  200 test accuracy:  0.999364855328
+sample count:  300 test accuracy:  1.0
+sample count:  400 test accuracy:  1.0
+sample count:  500 test accuracy:  1.0
+sample count:  600 test accuracy:  1.0
+sample count:  700 test accuracy:  1.0
+sample count:  800 test accuracy:  1.0
+sample count:  900 test accuracy:  1.0
+sample count:  1000 test accuracy:  1.0
+
+
+dpgmm with two gaussian with diag covmatrix
+train accuracy : 0.975714285714   test accuracy : 0.957023538345  iter 20
+
+gmm with two gaussian with diag covmatrix
+train accuracy : 0.995   test accuracy : 0.991495823842   iter 20
+train accuracy : 0.997142857143   test accuracy : 0.99217919514   iter 30
+train accuracy : 0.995   test accuracy : 0.992027334852   iter 40
+train accuracy : 0.00714285714286  test accuracy : 0.0107061503417   iter 50
+train accuracy : 0.993571428571  test accuracy : 0.992786636295   iter 60
+
+vbgmm
+sample count  30  train accuracy  0.983333333333  test accuracy  0.970296347347
+sample count  40  train accuracy  1.0  test accuracy   0.942028985507
+sample count  50  train accuracy  0.98 test accuracy   0.946648237733
+sample count  60  train accuracy  0.991666666667  test accuracy   0.949896193772
+sample count  70  train accuracy  0.0142857142857  test accuracy  0.04158004158
+sample count  90  train accuracy  0.983333333333   test accuracy   0.959138290479
+sample count  100  train accuracy  0.005   test accuracy   0.0537926235212
+sample count  150  train accuracy  0.0333333333333   test accuracy   0.060336370007
+sample count  200  train accuracy  0.015  test accuracy  0.043119266055
+sample count  250  train accuracy  0.984  test accuracy  0.952096659559
+sample count  300  train accuracy  0.0166666666667  test accuracy  0.0439513242663
+sample count  350
+train accuracy
+0.0228571428571
+test accuracy
+0.0443403028118
+sample count  400
+train accuracy
+0.9775
+test accuracy
+0.958968772694
+sample count  450
+train accuracy
+0.0177777777778
+test accuracy
+0.0422823701536
+sample count  500
+train accuracy
+0.026
+test accuracy
+0.0467943994105
+sample count  550
+train accuracy
+0.0190909090909
+test accuracy
+0.041425389755
+sample count  600
+train accuracy
+0.0208333333333
+test accuracy
+0.0397157816006
+sample count  650
+train accuracy
+0.984615384615
+test accuracy
+0.956970610399
+sample count  700
+train accuracy
+0.975714285714
+test accuracy
+0.959377372817
+
+GMM
+sample count  30
+train accuracy
+1.0
+test accuracy
+0.99800137836
+sample count  40
+train accuracy
+1.0
+test accuracy
+0.992408557626
+sample count  50
+train accuracy
+0.0
+test accuracy
+0.0136834830684
+sample count  60
+train accuracy
+1.0
+test accuracy
+0.994809688581
+sample count  70
+train accuracy
+0.0
+test accuracy
+0.00776160776161
+sample count  90
+train accuracy
+1.0
+test accuracy
+0.991730368311
+sample count  100
+train accuracy
+0.0
+test accuracy
+0.00932498260264
+sample count  150
+train accuracy
+0.0
+test accuracy
+0.00742817098809
+sample count  200
+train accuracy
+0.9925
+test accuracy
+0.9932251235
+sample count  250
+train accuracy
+0.006
+test accuracy
+0.00724946695096
+sample count  300
+train accuracy
+0.993333333333
+test accuracy
+0.98883321403
+sample count  350
+train accuracy
+0.997142857143
+test accuracy
+0.992213410238
+sample count  400
+train accuracy
+0.00375
+test accuracy
+0.00842411038489
+sample count  450
+train accuracy
+0.00222222222222
+test accuracy
+0.00599853694221
+sample count  500
+train accuracy
+0.007
+test accuracy
+0.00810611643331
+sample count  550
+train accuracy
+0.00454545454545
+test accuracy
+0.00801781737194
+sample count  600
+train accuracy
+0.995
+test accuracy
+0.991548242334
+sample count  650
+train accuracy
+0.995384615385
+test accuracy
+0.99148455162
+sample count  700
+train accuracy
+0.995714285714
+test accuracy
+0.991040242976
+
+
+DPGMM
+1.0 , 0.936319779462
+0.0125 , 0.0595583160801
+0.99 , 0.969592259848
+0.0166666666667 , 0.0498269896194
+0.0142857142857 , 0.0351351351351
+0.977777777778 , 0.94829742877
+0.035 , 0.0461377870564
+0.01 , 0.0535388927821
+0.025 , 0.0486944248412
+0.02 , 0.0407960199005
+0.025 , 0.0451682176092
+0.02 , 0.0439798125451
+0.97875 , 0.959840232389
+0.978888888889 , 0.953547915143
+0.977 , 0.955342667649
+0.974545454545 , 0.960579064588
+0.0225 , 0.0471204188482
+0.02 , 0.0412961567445
+0.973571428571 , 0.960971905847
+
+
