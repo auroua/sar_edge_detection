@@ -16,9 +16,9 @@ class RBM(object):
     def __init__(self, num_visual, num_hidden, num_visible_unit_type='bin', learning_rate=1e-3,
                  gradient_lr= 1e-2, max_iter=100, epoch=10000, batch_size=32.0, regtype='l2'):
         self.input_img = tf.placeholder(tf.float32, shape=[batch_size, num_visual])
-        self.W = tf.Variable(tf.truncated_normal(shape=[num_visual, num_hidden], stddev=0.1), name='weights')
-        self.v = tf.Variable(tf.constant(0.1, shape=[num_visual]), name='visible-bias')
-        self.h = tf.Variable(tf.constant(0.1, shape=[num_hidden]), name='hidden-bias')
+        self.W = tf.Variable(tf.truncated_normal(shape=[num_visual, num_hidden], stddev=0.1), name='weights', dtype=tf.float32)
+        self.v = tf.Variable(tf.constant(0.1, shape=[num_visual]), name='visible-bias', dtype=tf.float32)
+        self.h = tf.Variable(tf.constant(0.1, shape=[num_hidden]), name='hidden-bias', dtype=tf.float32)
         self.num_hidden = num_hidden
         self.num_visual = num_visual
         self.lr = learning_rate
@@ -52,6 +52,7 @@ class RBM(object):
 
     def propdown(self, hidden_layer):
         visible_reshape = tf.reshape(self.v, shape=[1, self.num_visual])
+        # hidden_layer: 5*500   500*784
         return tf.nn.sigmoid(tf.add(tf.matmul(hidden_layer, tf.transpose(self.W)), visible_reshape))
 
 

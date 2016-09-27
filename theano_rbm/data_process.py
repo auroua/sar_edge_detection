@@ -32,8 +32,9 @@ def getFiles_jpg(path):
 
 
 def  process_train_data():
-    pic_url = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_28*28/'
-    img_size = 28
+    # pic_url = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_28*28/'
+    pic_url = '/home/aurora/hdd/workspace/data/CBCL/MIT-CBCL-Face-Database/train/face/'
+    img_size = 19
     files = getFiles(pic_url)
     total_data = np.zeros((len(files), img_size*img_size), dtype=np.float32)
     for index, path in enumerate(files):
@@ -51,7 +52,7 @@ def  process_train_data():
     #    img2 = np.resize(img2, (64, 64))
     #    cv2.imshow('after mean', img2)
     #    cv2.waitKey(0)
-    np.save('origin_target_train_28', total_data)
+    np.save('face_train_dataset_19', total_data)
 
 def mnist_resize():
     mnist_origin = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei/'
