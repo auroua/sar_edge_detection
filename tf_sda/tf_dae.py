@@ -116,7 +116,7 @@ def _corrupt_input(data):
 
 
 if __name__=='__main__':
-    data_url = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/theano_rbm/data/binary_target_train_28.npy'
+    data_url = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/theano_rbm/data/origin_target_train_28.npy'
     o_train_set_x = np.load(data_url)
     print o_train_set_x.shape
     data_sets = input_data.read_data_sets(FLAGS.train_dir, FLAGS.fake_data, one_hot=True)
