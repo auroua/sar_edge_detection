@@ -57,7 +57,10 @@ class RBM(object):
 
 
     def sample_prob(self, prob):
-        return tf.nn.relu(tf.sign(prob - tf.random_uniform(shape=prob.get_shape())))
+        return tf.nn.relu(tf.sign(prob - tf.random_uniform(shape=tf.shape(prob))))
+
+    def sample_prob_shape(self, prob, shape):
+        return tf.nn.relu(tf.sign(prob - tf.random_uniform(shape=shape)))
 
     def sample_hidden_given_visible(self, visible_layer):
         output = self.propup(visible_layer)

@@ -76,7 +76,8 @@ def loss_cross_entropy(inference_output, images):
     return cross_entropy, cost
 
 def loss_l2(inference_output, images):
-    loss = tf.nn.l2_loss(inference_output - images)/FLAGS.batch_size
+    input_size = tf.shape(images)[0]
+    loss = tf.nn.l2_loss(inference_output - images)/tf.cast(input_size, tf.float32)
     tf.scalar_summary('l2_loss', loss)
     return loss
 
@@ -111,38 +112,7 @@ def _corrupt_input(data):
 
         elif FLAGS.corr_type == 'salt_and_pepper':
             return utilities.salt_and_pepper_noise(data, corruption_ratio)
-    else:    # print 'begin draw encode and decode'
-    # N_COL = 10
-    # N_ROW = 2
-    # plt.figure(figsize=(N_COL, N_ROW * 2.5))
-    # np.random.shuffle(shuff)
-    # batches = [_ for _ in utilities.gen_batches(shuff, FLAGS.batch_size)]
-    # batch_xs, _ = x_batch, x_corr_batch = zip(*batches[0])
-    # for row in range(N_ROW):
-    #     for col in range(N_COL):
-    #             i = row * N_COL + col
-    #             data = batch_xs[i:i + 1]
-    #             data = np.array(data)
-    #             # Draw Input Data(x)
-    #             plt.subplot(2 * N_ROW, N_COL, 2 * row * N_COL + col + 1)
-    #             plt.title('IN:%02d' % i)
-    #             plt.imshow(data.reshape((28, 28)), cmap="gray", clim=(0, 1.0), origin='upper')
-    #             # plt.imshow(data.reshape((28, 28)))
-    #             plt.tick_params(labelbottom="off")
-    #             plt.tick_params(labelleft="off")
-    #
-    #             # Draw Output Data(y)
-    #             plt.subplot(2 * N_ROW, N_COL, 2 * row * N_COL + N_COL + col + 1)
-    #             plt.title('OUT:%02d' % i)
-    #             y_value = output.eval(session=sess,
-    #                                   feed_dict={auto_encoder.input: data})
-    #             # plt.imshow(y_value.reshape((28, 28)))
-    #             plt.imshow(y_value.reshape((28, 28)), cmap="gray", clim=(0, 1.0), origin='upper')
-    #             plt.tick_params(labelbottom="off")
-    #             plt.tick_params(labelleft="off")
-    #
-    # plt.savefig("result.png")
-    # plt.show()
+    else:
         return np.copy(data)
 
 
@@ -150,7 +120,7 @@ if __name__=='__main__':
     data_url = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/theano_rbm/data/origin_target_train_28.npy'
     o_train_set_x = np.load(data_url)
     print o_train_set_x.shape
-    data_sets = input_data.read_data_sets(FLAGS.train_dir, FLAGS.fake_data, one_hot=True)
+    # data_sets = input_data.read_data_sets(FLAGS.train_dir, FLAGS.fake_data, one_hot=True)
     with tf.Graph().as_default():
         # original ad
         image_placeholder, correct_placeholder = place_holder_inputs2()
@@ -175,6 +145,7 @@ if __name__=='__main__':
         # add noise
         # x_corrupted = _corrupt_input(data_sets.train.images)
         x_corrupted = _corrupt_input(o_train_set_x)
+        print np.mean(x_corrupted)
         # print x_corrupted.shape
         shuff = zip(o_train_set_x, x_corrupted)
         test_shuff = np.array(shuff)
@@ -187,14 +158,15 @@ if __name__=='__main__':
                 for batch in batches:
                     x_batch, x_corr_batch = zip(*batch)
                     feed_dict = gen_dict2(image_placeholder, correct_placeholder, x_batch, x_corr_batch)
-                    _, loss_value = sess.run([train_op, cost], feed_dict=feed_dict)
+                    _, loss_value, output_val = sess.run([train_op, cost, logit], feed_dict=feed_dict)
 
                 duration = time.time() - start_time
 
                 # Write the summaries and print an overview fairly often.
                 if step % 100 == 0:
                     # Print status to stdout.
-                    print('Step %d: loss = %.2f (%.3f sec)' % (step, loss_value, duration))
+                    # print('Step %d: loss = %.2f (%.3f sec)' % (step, loss_value, duration))
+                    print('Step %d: loss = %.2f (%.3f sec)   %.2f ' % (step, loss_value, duration, np.mean(output_val)))
                     # Update the events file.
                     summary_str = sess.run(summary, feed_dict=feed_dict)
                     summary_writer.add_summary(summary_str, step)
@@ -221,7 +193,9 @@ if __name__=='__main__':
                 # Draw Input Data(x)
                 plt.subplot(2 * N_ROW, N_COL, 2 * row * N_COL + col + 1)
                 plt.title('IN:%02d' % i)
-                plt.imshow(data.reshape((28, 28)), cmap="coolwarm", clim=(0, 1.0), origin='upper')
+                plt.imshow(data.reshape((28, 28)), cmap="gray", clim=(0, 1.0), origin='upper')
+                # plt.imshow(data.reshape((28, 28)), cmap="coolwarm", clim=(0, 1.0), origin='upper')
+                # plt.imshow(data.reshape((28, 28)))
                 plt.tick_params(labelbottom="off")
                 plt.tick_params(labelleft="off")
 
@@ -229,7 +203,8 @@ if __name__=='__main__':
                 plt.subplot(2 * N_ROW, N_COL, 2 * row * N_COL + N_COL + col + 1)
                 plt.title('OUT:%02d' % i)
                 y_value = logit.eval(session=sess, feed_dict={image_placeholder: data})
-                plt.imshow(y_value.reshape((28, 28)), cmap="coolwarm", clim=(0, 1.0), origin='upper')
+                plt.imshow(y_value.reshape((28, 28)), cmap="gray", clim=(0, 1.0), origin='upper')
+                # plt.imshow(y_value.reshape((28, 28)))
                 plt.tick_params(labelbottom="off")
                 plt.tick_params(labelleft="off")
 

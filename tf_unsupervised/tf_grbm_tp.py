@@ -7,11 +7,13 @@ try:
 except ImportError:
     import Image
 import time
+import matplotlib.pyplot as plt
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string('train_dir', 'data', 'data dir')
+flags.DEFINE_float('batch_size', 128.0, 'batch size')
 
 
 class GBRBM(RBM):
@@ -25,6 +27,8 @@ class GBRBM(RBM):
         self.v = tf.Variable(tf.constant(0., shape=[1, num_visual]), name='visible-bias', dtype=tf.float32)
         self.h = tf.Variable(tf.constant(0., shape=[1, num_hidden]), name='hidden-bias', dtype=tf.float32)
         self.cdk = cdk
+
+        self.input_img = tf.placeholder(dtype=tf.float32, shape=[None, 784], name='input_node')
 
         # adaptive_learning_rate
         self.exp_up = 1.01
@@ -125,7 +129,7 @@ class GBRBM(RBM):
         v_bias0 = tf.reduce_mean(self.input_img, reduction_indices=[0])
         hidden_mean = self.propup_mean(self.input_img)
         h_bias0 = tf.reduce_mean(hidden_mean, reduction_indices=[0], keep_dims=True)
-        W0 = tf.matmul(tf.transpose(self.input_img), hidden_mean)/self.input_img.get_shape().as_list()[0]
+        W0 = tf.matmul(tf.transpose(self.input_img), hidden_mean)/tf.cast(tf.shape(self.input_img)[0], tf.float32)
         v_bias0 = tf.div(v_bias0, tf.square(self.sigma))
         W0 = tf.div(W0, tf.transpose(tf.square(self.sigma)))
         sigma0 = tf.square(self.input_img - self.v) - self.input_img*tf.matmul(hidden_mean, tf.transpose(self.W))
@@ -214,7 +218,7 @@ class GBRBM(RBM):
 
         v_bias1 = tf.reduce_mean(v1_list[self.pt_n_chains-1], reduction_indices=[0], keep_dims=True)
         h_bias1 = tf.reduce_mean(h1_list[self.pt_n_chains-1], reduction_indices=[0], keep_dims=True)
-        W1 = tf.matmul(tf.transpose(v1_list[self.pt_n_chains-1]), h1_list[self.pt_n_chains-1]) / self.input_img.get_shape().as_list()[0]
+        W1 = tf.matmul(tf.transpose(v1_list[self.pt_n_chains-1]), h1_list[self.pt_n_chains-1]) / tf.cast(tf.shape(self.input_img)[0], tf.float32)
         v_bias1 = tf.div(v_bias1, tf.square(self.sigma))
         W1 = tf.div(W1, tf.transpose(tf.square(self.sigma)))
         sigma1 = tf.square(v1_list[self.pt_n_chains-1] - self.v) - v1_list[self.pt_n_chains-1]*tf.matmul(h1_list[self.pt_n_chains-1], tf.transpose(self.W))
@@ -370,7 +374,7 @@ class GBRBM(RBM):
         v_bias0 = tf.reduce_mean(self.input_img, reduction_indices=[0])
         hidden_mean = self.propup_mean(self.input_img)
         h_bias0 = tf.reduce_mean(hidden_mean, reduction_indices=[0], keep_dims=True)
-        W0 = tf.matmul(tf.transpose(self.input_img), hidden_mean)/self.input_img.get_shape().as_list()[0]
+        W0 = tf.matmul(tf.transpose(self.input_img), hidden_mean)/tf.cast(tf.shape(self.input_img)[0], tf.float32)
         v_bias0 = tf.div(v_bias0, tf.square(self.sigma))
         W0 = tf.div(W0, tf.transpose(tf.square(self.sigma)))
         sigma0 = tf.square(self.input_img - self.v) - self.input_img*tf.matmul(hidden_mean, tf.transpose(self.W))
@@ -386,7 +390,7 @@ class GBRBM(RBM):
 
         v_bias1 = tf.reduce_mean(v1_mean, reduction_indices=[0], keep_dims=True)
         h_bias1 = tf.reduce_mean(h1, reduction_indices=[0], keep_dims=True)
-        W1 = tf.matmul(tf.transpose(v1_mean), h1) / self.input_img.get_shape().as_list()[0]
+        W1 = tf.matmul(tf.transpose(v1_mean), h1) / tf.cast(tf.shape(self.input_img)[0], tf.float32)
         v_bias1 = tf.div(v_bias1, tf.square(self.sigma))
         W1 = tf.div(W1, tf.transpose(tf.square(self.sigma)))
         sigma1 = tf.square(v1_mean - self.v) - v1_mean*tf.matmul(h1, tf.transpose(self.W))
@@ -408,7 +412,7 @@ class GBRBM(RBM):
 
 if __name__ == '__main__':
     IMG_SIZE = 28
-    gbrbm = GBRBM(IMG_SIZE*IMG_SIZE, 256, cdk=1000, epoch=3)
+    gbrbm = GBRBM(IMG_SIZE*IMG_SIZE, 500, cdk=100, epoch=100)
     o_train_set_x = np.load('../theano_rbm/data/origin_target_train_28.npy')
     # o_train_set_x = np.load('../theano_rbm/data/face_train_dataset_19.npy')
     total_mu = np.mean(o_train_set_x, axis=0, dtype=np.float32)
@@ -466,45 +470,83 @@ if __name__ == '__main__':
             # summary_writer.add_summary(summary_str, i)
             # summary_writer.flush()
 
+    # Draw Encode/Decode Result
+    print 'begin draw encode and decode'
+    N_COL = 10
+    N_ROW = 2
+    plt.figure(figsize=(N_COL, N_ROW * 2.5))
+    np.random.shuffle(o_train_set_x)
+    batches = [_ for _ in utilities.gen_batches(o_train_set_x, 100)]
+    batch_xs = batches[0]
+    for row in range(N_ROW):
+        for col in range(N_COL):
+                    i = row * N_COL + col
+                    data = batch_xs[i:i + 1]
+                    data = np.array(data)
+                    # print data.shape
+                    # Draw Input Data(x)
+                    plt.subplot(2 * N_ROW, N_COL, 2 * row * N_COL + col + 1)
+                    plt.title('IN:%02d' % i)
+                    plt.imshow(data.reshape((28, 28)), cmap="gray", clim=(0, 1.0), origin='upper')
+                    plt.tick_params(labelbottom="off")
+                    plt.tick_params(labelleft="off")
+
+                    # # Draw Output Data(y)
+                    plt.subplot(2 * N_ROW, N_COL, 2 * row * N_COL + N_COL + col + 1)
+                    plt.title('OUT:%02d' % i)
+                    h0_out_prob, h0_out_sample, v1_out_prob, v1_out_sample = gbrbm.gibbs_vhv()
+                    for i in range(100):
+                        if i == 0:
+                            v_sample = sess.run(v1_out_sample, feed_dict={gbrbm.input_img: data})
+                        else:
+                            v_sample = sess.run(v1_out_sample, feed_dict={gbrbm.input_img: v_sample})
+                    # y_value = v1_out_sample.eval(session=sess, feed_dict={gbrbm.input_img: data})
+                    plt.imshow(v_sample.reshape((28, 28)), cmap="gray", clim=(0, 1.0), origin='upper')
+                    plt.tick_params(labelbottom="off")
+                    plt.tick_params(labelleft="off")
+
+    plt.savefig("result.png")
+    plt.show()
+
     # Construct image from the weight matrix
-    image = Image.fromarray(
-        utilities.tile_raster_images(
-            X=w_.T,
-            img_shape=(IMG_SIZE, IMG_SIZE),
-            tile_shape=(6, 6),
-            tile_spacing=(1, 1)
-        )
-    )
-    image.save('filters_at_epoch_%i.png' % 0)
-    samples = o_train_set_x[:32]
-    image = Image.fromarray(
-        utilities.tile_raster_images(
-            X=samples,
-            img_shape=(IMG_SIZE, IMG_SIZE),
-            tile_shape=(6, 6),
-            tile_spacing=(1, 1)
-        )
-    )
-    image.save('original_image_%i.png' % 1)
-
-    h0_out_prob, h0_out_sample, v1_out_prob, v1_out_sample = gbrbm.gibbs_vhv()
-    # for i in range(10):
-    #     if i == 0:
-    #         v_sample = sess.run(v1_out_sample, feed_dict={rbm.input_img: samples})
-    #     else:
-    #         v_sample = sess.run(v1_out_sample, feed_dict={rbm.input_img: v_sample})
-
-    v_sample = sess.run(v1_out_sample, feed_dict={gbrbm.input_img: samples})
-    image = Image.fromarray(
-        utilities.tile_raster_images(
-            X=v_sample,
-            img_shape=(IMG_SIZE, IMG_SIZE),
-            tile_shape=(6, 6),
-            tile_spacing=(1, 1)
-        )
-    )
-
-    print 'recon error: ',  np.mean(np.sqrt(np.square(samples-v_sample)))
-    # print samples.shape
-    # print v_sample.shape
-    image.save('sample_image_at_epoch_%i.png' % 1)
+    # image = Image.fromarray(
+    #     utilities.tile_raster_images(
+    #         X=w_.T,
+    #         img_shape=(IMG_SIZE, IMG_SIZE),
+    #         tile_shape=(6, 6),
+    #         tile_spacing=(1, 1)
+    #     )
+    # )
+    # image.save('filters_at_epoch_%i.png' % 0)
+    # samples = o_train_set_x[:32]
+    # image = Image.fromarray(
+    #     utilities.tile_raster_images(
+    #         X=samples,
+    #         img_shape=(IMG_SIZE, IMG_SIZE),
+    #         tile_shape=(6, 6),
+    #         tile_spacing=(1, 1)
+    #     )
+    # )
+    # image.save('original_image_%i.png' % 1)
+    #
+    # h0_out_prob, h0_out_sample, v1_out_prob, v1_out_sample = gbrbm.gibbs_vhv()
+    # # for i in range(10):
+    # #     if i == 0:
+    # #         v_sample = sess.run(v1_out_sample, feed_dict={rbm.input_img: samples})
+    # #     else:
+    # #         v_sample = sess.run(v1_out_sample, feed_dict={rbm.input_img: v_sample})
+    #
+    # v_sample = sess.run(v1_out_sample, feed_dict={gbrbm.input_img: samples})
+    # image = Image.fromarray(
+    #     utilities.tile_raster_images(
+    #         X=v_sample,
+    #         img_shape=(IMG_SIZE, IMG_SIZE),
+    #         tile_shape=(6, 6),
+    #         tile_spacing=(1, 1)
+    #     )
+    # )
+    #
+    # print 'recon error: ',  np.mean(np.sqrt(np.square(samples-v_sample)))
+    # # print samples.shape
+    # # print v_sample.shape
+    # image.save('sample_image_at_epoch_%i.png' % 1)
