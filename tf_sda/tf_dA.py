@@ -14,7 +14,7 @@ flags.DEFINE_integer('input_size', 784, 'max epoch')
 flags.DEFINE_float('learning_rate', 0.01, 'learning rate')
 flags.DEFINE_float('prob', 0.5, 'drop out probability')
 flags.DEFINE_string('corr_type', 'salt_and_pepper', 'Type of input corruption. ["none", "masking", "salt_and_pepper"]')
-flags.DEFINE_float('corr_frac', 0.3, 'Fraction of the input to corrupt.')
+flags.DEFINE_float('corr_frac', 0.5, 'Fraction of the input to corrupt.')
 flags.DEFINE_boolean('fake_data', False, 'If true, uses fake data for unit testing.')
 flags.DEFINE_string('train_dir', 'data', 'data dir')
 
@@ -71,7 +71,7 @@ class dA(object):
             tf.scalar_summary('loss value', summary_loss, name='summary_loss')
 
     def evaluation(self, recon):
-        input_size = tf.shape(auto_encoder.input)[0]
+        input_size = tf.shape(self.input)[0]
         error = tf.nn.l2_loss(self.input_with_out_noise - recon)/tf.cast(input_size, tf.float32)
         return error
 
@@ -209,7 +209,8 @@ if __name__ == '__main__':
     #
     #             # Draw Output Data(y)
     #             plt.subplot(2 * N_ROW, N_COL, 2 * row * N_COL + N_COL + col + 1)
-    #             plt.title('IN:%02d' % i+j)
+    #             val = i + j
+    #             plt.title('IN:%02d' % val)
     #             plt.imshow(data2, cmap="gray", clim=(0, 1.0), origin='upper')
     #             plt.tick_params(labelbottom="off")
     #             plt.tick_params(labelleft="off")
