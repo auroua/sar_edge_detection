@@ -331,6 +331,7 @@ if __name__ == '__main__':
     IMG_SIZE = 28
     gbrbm = GBRBM(IMG_SIZE*IMG_SIZE, 500, cdk=30, epoch=300)
     o_train_set_x = np.load('../theano_rbm/data/origin_target_train_28.npy')
+    # print type(o_train_set_x), o_train_set_x.shape, np.max(o_train_set_x), np.min(o_train_set_x)
     # o_train_set_x = np.load('../theano_rbm/data/face_train_dataset_19.npy')
 
     sess = tf.Session()

@@ -7,18 +7,12 @@ import matplotlib.pyplot as plt
 flags = tf.app.flags
 FLAGS = flags.FLAGS
 
-# flags.DEFINE_integer('input_layer_size', 784, 'input layer size')
-# flags.DEFINE_integer('hidden_layer1_size', 640, 'hidden layer 1 size')
-# flags.DEFINE_integer('batch_size', 100, 'batch size')
-# flags.DEFINE_integer('epochs', 100, 'max epoch')
-# flags.DEFINE_float('learning_rate', 0.001, 'learning rate')
-# flags.DEFINE_float('prob', 0.5, 'drop out probability')
 flags.DEFINE_string('corr_type', 'salt_and_pepper', 'Type of input corruption. ["none", "masking", "salt_and_pepper"]')
 flags.DEFINE_float('corr_frac', 0.4, 'Fraction of the input to corrupt.')
 
 
 class tf_daw(object):
-    def __init__(self, weights, hbias, vbias, input1, input2, keep_prob, name_scope):
+    def __init__(self, weights, hbias, vbias, input1, input2, keep_prob, name_scope, activation):
         self.w = weights
         self.hb = hbias
         self.vb = vbias
@@ -27,6 +21,22 @@ class tf_daw(object):
         self.name_scope = name_scope
         self.keep_prob = keep_prob
         self.global_step = tf.Variable(0.0, trainable=False, name='global_stpe')
+        self.activation = activation
+
+    @property
+    def is_pretrained(self):
+        return self.w is not None and self.hb is not None and self.vb is not None
+
+    def encode(self, use_variables=False):
+        with tf.name_scope(self.name_scope+'inference'):
+            input_hidden = self.activate(tf.matmul(self.input_noise, self.w) + self.hbias, name='activate')
+        return input_hidden
+
+    def decode(self, input_hidden, use_variables=False):
+        with tf.name_scope(self.name_scope+'inference'):
+            drop_out = tf.nn.dropout(input_hidden, keep_prob=self.keep_prob, name='drop_out_layer')
+            hidden_output = tf.nn.relu(tf.matmul(drop_out, tf.transpose(self.w)) + self.vb, name='decode')
+        return hidden_output
 
     def inference(self):
         with tf.name_scope(self.name_scope+'inference'):
@@ -35,6 +45,18 @@ class tf_daw(object):
             hidden_output = tf.nn.relu(tf.matmul(drop_out, tf.transpose(self.w), name='hidden_weight') + self.vb,
                                        name='activition')
         return hidden_output
+
+    def activate(self, input_tensor, name=None):
+        """Applies the activation function for this layer based on self.activation."""
+        if self.activation == "sigmoid":
+            return tf.nn.sigmoid(input_tensor, name=name)
+        if self.activation == "tanh":
+            return tf.nn.tanh(input_tensor, name=name)
+        if self.activation == "relu":
+            return tf.nn.relu(input_tensor, name=name)
+        else:
+            print("Activation function not valid. Using the identity.")
+            return input_tensor
 
     def loss(self, inference_output):
         input_size = tf.shape(self.input_noise)[0]
@@ -56,29 +78,29 @@ class tf_daw(object):
         error = tf.nn.l2_loss(self.input_correct - recon)/tf.cast(input_size, tf.float32)
         return error
 
-    def run_train(self, o_train_set_x, sess, writer, summary):
-        output_train = self.inference()
-        loss_train = self.loss(output_train)
-        optimize_train = self.train(loss_train)
-        self.summary_parameter(loss_train)
-        x_corrupted_train = _corrupt_input(o_train_set_x)
-        shuff_train = zip(o_train_set_x, x_corrupted_train)
-        for step in range(FLAGS.epochs):
-            np.random.shuffle(shuff_train)
-            batches = [_ for _ in utilities.gen_batches(shuff_train, FLAGS.batch_size)]
-            start_time = time.time()
-            for batch in batches:
-                x_batch, x_corr_batch = zip(*batch)
-                _, loss_value, summary_val, output_val = sess.run([optimize_train, loss_train, summary, output_train],
-                                                                  feed_dict={self.input_noise: x_corr_batch,
-                                                                             self.input_correct: x_batch})
-                writer.add_summary(summary_val)
-            duration = time.time() - start_time
-            # Write the summaries and print an overview fairly often.
-            if step % 100 == 0:
-                # Print status to stdout.
-                print('Step %d: loss = %.2f (%.3f sec)   %.2f ' % (step, loss_value, duration, np.mean(output_val)))
-            writer.flush()
+    # def run_train(self, o_train_set_x, sess, writer, summary):
+    #     output_train = self.inference()
+    #     loss_train = self.loss(output_train)
+    #     optimize_train = self.train(loss_train)
+    #     self.summary_parameter(loss_train)
+    #     x_corrupted_train = _corrupt_input(o_train_set_x)
+    #     shuff_train = zip(o_train_set_x, x_corrupted_train)
+    #     for step in range(FLAGS.epochs):
+    #         np.random.shuffle(shuff_train)
+    #         batches = [_ for _ in utilities.gen_batches(shuff_train, FLAGS.batch_size)]
+    #         start_time = time.time()
+    #         for batch in batches:
+    #             x_batch, x_corr_batch = zip(*batch)
+    #             _, loss_value, summary_val, output_val = sess.run([optimize_train, loss_train, summary, output_train],
+    #                                                               feed_dict={self.input_noise: x_corr_batch,
+    #                                                                          self.input_correct: x_batch})
+    #             writer.add_summary(summary_val)
+    #         duration = time.time() - start_time
+    #         # Write the summaries and print an overview fairly often.
+    #         if step % 100 == 0:
+    #             # Print status to stdout.
+    #             print('Step %d: loss = %.2f (%.3f sec)   %.2f ' % (step, loss_value, duration, np.mean(output_val)))
+    #         writer.flush()
 
 
 def _corrupt_input(data):
