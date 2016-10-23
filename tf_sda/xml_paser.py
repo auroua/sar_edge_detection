@@ -4,6 +4,7 @@
 import xml.sax
 import cv2
 import numpy as np
+from theano_rbm.data_process import getFiles, getFiles_jpg
 
 
 class XmlHandler(xml.sax.ContentHandler):
@@ -105,24 +106,21 @@ def gen_coord(coord_x, coord_y):
     return np.array(lists)
 
 
-if __name__ == "__main__":
+def get_counter(url):
     # 创建一个 XMLReader
     parser = xml.sax.make_parser()
     # turn off namepsaces
     parser.setFeature(xml.sax.handler.feature_namespaces, 0)
-
     # 重写 ContextHandler
-    Handler = XmlHandler()
-    parser.setContentHandler(Handler)
+    handler = XmlHandler()
+    parser.setContentHandler(handler)
+    parser.parse(url)
+    # print len(handler.target_x), len(handler.target_y)
+    # print len(handler.back_x), len(handler.back_y)
+    return handler
 
-    parser.parse("xml_test/HB20001.000.xml")
-    print len(Handler.target_x), len(Handler.target_y)
-    print len(Handler.back_x), len(Handler.back_y)
 
-    img = cv2.imread('xml_test/HB20001.000.jpg', cv2.IMREAD_ANYDEPTH | cv2.IMREAD_ANYCOLOR)
-    print 'img max, min', np.max(img), np.min(img)
-    # print img
-
+def update_counter_target(Handler):
     target_temp_x = []
     target_temp_y = []
     for i, x in enumerate(Handler.target_x):
@@ -132,8 +130,10 @@ if __name__ == "__main__":
     Handler.target_x.extend(target_temp_x)
     Handler.target_y.extend(target_temp_y)
     print len(Handler.target_x), len(Handler.target_y)
-    # for i, x in enumerate(Handler.target_x):
-    #     img[Handler.target_y[i], x] = 255
+    return Handler
+
+
+def update_counter_back(Handler):
     back_temp_x = []
     back_temp_y = []
     for i, x in enumerate(Handler.back_x):
@@ -143,18 +143,34 @@ if __name__ == "__main__":
     Handler.back_x.extend(back_temp_x)
     Handler.back_y.extend(back_temp_y)
     print len(Handler.back_x), len(Handler.back_y)
-    # for i, x in enumerate(Handler.back_x):
-    #      img[Handler.back_y[i], x] = 255
+    return Handler
+
+
+def draw_counter_target(Handler, img):
     target_coords = gen_coord(Handler.target_x, Handler.target_y)
     for i in range(target_coords.shape[0]-1):
         cv2.line(img, (target_coords[i][0], target_coords[i][1]), (target_coords[i+1][0],target_coords[i+1][1]), (255))
-    print img.shape
 
     # for i in range(img.shape[0]):
     #     for j in range(img.shape[1]):
     #         if img[i, j] != 255:
     #             img[i, j] = 0
+    return img
 
+
+def draw_counter_back(Handler, img):
+    back_coords = gen_coord(Handler.back_x, Handler.back_y)
+    for i in range(back_coords.shape[0]-1):
+        cv2.line(img, (back_coords[i][0], back_coords[i][1]), (back_coords[i+1][0],back_coords[i+1][1]), (255))
+
+    # for i in range(img.shape[0]):
+    #     for j in range(img.shape[1]):
+    #         if img[i, j] != 255:
+    #             img[i, j] = 0
+    return img
+
+
+def fill_counter(img):
     temp_i = []
     temp_j1 = []
     temp_j2 = []
@@ -174,13 +190,76 @@ if __name__ == "__main__":
             elif flags and img[i, j] == 255 and np.abs(temp_j-j) >= 2:
                 flags = False
                 temp_j2.append(j)
-            elif np.abs(temp_j-j)==10:
+            elif np.abs(temp_j-j) == 10:
                 flags = False
             else:
                 img[i, j] = 0
     print temp_i
     print temp_j1
     print temp_j2
-    cv2.imshow('test', img)
-    cv2.waitKey(0)
-    cv2.imwrite('/home/aurora/Desktop/test.jpg', img)
+    return img
+
+
+def after_prosses_img(img):
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            if img[i, j] != 255:
+                img[i, j] = 0
+
+
+def after_prosses_all(img):
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            if img[i, j] != 127:
+                img[i, j] = 0
+            if img[i, j] == 127:
+                # print i, j, img[i, j]
+                img[i, j] = 255
+
+
+def save_target(handler, images, save_url, image_name):
+    target_coords = gen_coord(handler.target_x, handler.target_y)
+    cv2.fillPoly(images, pts=[target_coords], color=(255))
+    after_prosses_img(images)
+    cv2.imwrite(save_url+image_name, images)
+    return images
+
+
+def save_back(handler, images, save_url, image_name):
+    back_coords = gen_coord(handler.back_x, handler.back_y)
+    cv2.fillPoly(images, pts=[back_coords], color=(255))
+    after_prosses_img(images)
+    cv2.imwrite(save_url+image_name, images)
+    return images
+
+
+def save_all(img_t, img_b, save_url, img_name):
+    img_all = (img_t+img_b)/2
+    after_prosses_all(img_all)
+    cv2.imwrite(save_url+img_name, img_all)
+    return img_all
+
+
+def get_file_name(url):
+    filename = url.split('/')[-1][:-4]
+    return filename
+
+
+if __name__ == "__main__":
+    save_url = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/'
+    img_url = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei/'
+    xml_url = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/annoation_xml'
+    annoation_xml_list = getFiles(xml_url)
+    # file_name_list = [get_file_name(filename) for filename in annoation_xml_list]
+    for annoation_name in annoation_xml_list:
+        filename = get_file_name(annoation_name)
+        img_target = cv2.imread(img_url+filename+'.jpg', cv2.IMREAD_ANYDEPTH | cv2.IMREAD_ANYCOLOR)
+        img_back = img_target.copy()
+        handler = get_counter(annoation_name)
+        img_target = save_target(handler, img_target, save_url, filename+'_target.jpg')
+        img_back = save_back(handler, img_back, save_url, filename+'_back.jpg')
+        img_all = save_all(img_target, img_back,  save_url, filename+'_all.jpg')
+        # cv2.imshow('test', img_target)
+        # cv2.imshow('test', img_back)
+        # cv2.imshow('test', img_all)
+        # cv2.waitKey(0)
