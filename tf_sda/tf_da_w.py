@@ -3,12 +3,24 @@ import numpy as np
 import time
 import utilities
 import matplotlib.pyplot as plt
+from tensorflow.examples.tutorials.mnist import input_data
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string('corr_type', 'salt_and_pepper', 'Type of input corruption. ["none", "masking", "salt_and_pepper"]')
 flags.DEFINE_float('corr_frac', 0.4, 'Fraction of the input to corrupt.')
+flags.DEFINE_integer('pre_batch_size', 100, 'pre training batch size')
+flags.DEFINE_float('pre_learning_rate', 0.001, 'pre_training learning rate')
+flags.DEFINE_integer('input_layer_size', 784, 'input layer size')
+flags.DEFINE_integer('hidden_layer1_size', 640, 'hidden layer 1 size')
+flags.DEFINE_integer('hidden_layer2_size', 400, 'hidden layer 2 size')
+flags.DEFINE_integer('hidden_layer3_size', 250,  'fully connected layer size')
+flags.DEFINE_integer('output_class', 10, 'total category')
+flags.DEFINE_integer('batch_size', 100, 'batch size')
+flags.DEFINE_integer('epochs', 400, 'max epoch')
+flags.DEFINE_float('learning_rate', 0.001, 'learning rate')
+flags.DEFINE_float('prob', 0.5, 'drop out probability')
 
 
 class tf_daw(object):
@@ -126,7 +138,11 @@ def _corrupt_input(data):
 
 if __name__=='__main__':
     data_url = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/theano_rbm/data/origin_target_train_28.npy'
-    o_train_set_x = np.load(data_url)
+    # o_train_set_x = np.load(data_url)
+    data = input_data.read_data_sets("data/MNIST", one_hot=True)
+    o_train_set_x = data.train.images
+
+
     print o_train_set_x.shape
     w = tf.Variable(tf.random_uniform(shape=[FLAGS.input_layer_size, FLAGS.hidden_layer1_size],
                         minval=-4 * np.sqrt(6. / (FLAGS.input_layer_size + FLAGS.hidden_layer1_size)),
@@ -136,7 +152,7 @@ if __name__=='__main__':
     input_img_noise = tf.placeholder(tf.float32, shape=[None, FLAGS.input_layer_size], name='input_image')
     input_img_correct = tf.placeholder(tf.float32, shape=[None, FLAGS.input_layer_size], name='input_image')
 
-    auto_encoder = tf_daw(w, hb, vb, input_img_noise, input_img_correct, FLAGS.prob, 'sda1')
+    auto_encoder = tf_daw(w, hb, vb, input_img_noise, input_img_correct, FLAGS.prob, 'sda1', 'relu')
 
     output = auto_encoder.inference()
     loss = auto_encoder.loss(output)
