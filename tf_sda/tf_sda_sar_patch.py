@@ -4,9 +4,6 @@ import matplotlib.pyplot as plt
 import utilities
 from util import *
 from tensorflow.examples.tutorials.mnist import input_data
-from mstar_patch_batch_generator import get_train_dataset, get_test_dataset
-import os
-import time
 
 __version__ = '0.1'
 
@@ -19,9 +16,9 @@ flags.DEFINE_string('x_train_path', 'data/MNIST', 'Train file path')
 flags.DEFINE_string('batch_method', 'random', 'How to generate data')
 flags.DEFINE_integer('epochs', 100, 'Train file path')
 flags.DEFINE_integer('log_step', 100, 'tensorflow writer log data')
-flags.DEFINE_integer('batch_size', 256, 'training batch size')
+flags.DEFINE_integer('batch_size', 100, 'training batch size')
 flags.DEFINE_boolean('debug', False, 'debug the system')
-flags.DEFINE_string('log_dir', 'model', 'the log dir')
+flags.DEFINE_string('log_dir', 'model_sar_patch', 'the log dir')
 
 """
 ###################
@@ -165,7 +162,7 @@ class SDAutoencoder(object):
     def check_assertions(self):
         assert 0 <= self.noise <= 1, "Invalid noise value given: %s" % self.noise
 
-    def __init__(self, output_dim, dims, activations, sess, noise=0.0, pretrain_lr=0.001, finetune_lr=0.001,
+    def __init__(self, dims, activations, sess, noise=0.0, pretrain_lr=0.001, finetune_lr=0.001,
                  batch_size=100, print_step=100):
         self.dims = dims
         self.input_dim = dims[0]  # The dimension of the raw input
@@ -179,11 +176,6 @@ class SDAutoencoder(object):
         self.hidden_layers = self.create_new_layers()
         self.sess = sess
 
-        with tf.name_scope("softmax_variables"):
-            self.W = weight_variable(self.output_dim, output_dim, name="weights")
-            self.b = bias_variable(output_dim, initial_value=0, name="biases")
-            # attach_variable_summaries(self.W, self.W.name)
-            # attach_variable_summaries(self.b, self.b.name, summ_list=summary_list)
         self.check_assertions()
         print("Initialized SDA network with dims %s, activations %s, noise %s, "
               "pretraining learning rate %s, finetuning learning rate %s, and batch size %s."
@@ -239,10 +231,18 @@ class SDAutoencoder(object):
     ###############
     # PRETRAINING #
     ###############
-    def pre_train_network(self, epochs, data):
+    def pre_train_network(self, epochs):
         print 'Starting to pretrain autoencoder network.'
-        x_train = data
+        data = input_data.read_data_sets("data/MNIST", one_hot=True)
+        x_train = data.train.images
         for i in range(len(self.hidden_layers)):
+            # if FLAGS.batch_method == "random":
+            #     x_train = data.train.images
+            #     np.random.shuffle(x_train)
+            #     x_train = [_ for _ in utilities.gen_batches(x_train, FLAGS.batch_size)]
+            # else:
+            #     x_train = data.train.images
+            #     x_train = [_ for _ in utilities.gen_batches(x_train, FLAGS.batch_size)]
             self.pre_train_layer(i, x_train, epochs)
         print 'Finished pretraining of autoencoder network.'
 
@@ -306,7 +306,7 @@ class SDAutoencoder(object):
     ##############
     # FINETUNING #
     ##############
-    def finetune_parameters(self, output_dim, data, label, epochs=1, batch_method="random"):
+    def finetune_parameters(self, output_dim, epochs=1, batch_method="random"):
         """Performs fine tuning on all parameters of the neural network plus two additional softmax
         variables. Call this method after `pretrain_network` is complete. Y values should be represented
         in one-hot format.
@@ -317,10 +317,18 @@ class SDAutoencoder(object):
         :param batch_method: A string, either 'random' or 'sequential', to indicate how batches are retrieved.
         :return: The tuned softmax parameters (weights and biases) of the classification layer.
         """
+        data = input_data.read_data_sets("data/MNIST", one_hot=True)
         # if batch_method == "random":
-        x_train = data
-        y_label = label
+        x_train = data.train.images
+        y_label = data.train.labels
         shuff = zip(x_train, y_label)
+            # np.random.shuffle(shuff)
+            # xy_train = [_ for _ in utilities.gen_batches(shuff, FLAGS.batch_size)]
+        # else:
+        #     x_train = data.train.images
+        #     y_label = data.train.labels
+        #     shuff = zip(x_train, y_label)
+        #     xy_train = [_ for _ in utilities.gen_batches(shuff, FLAGS.batch_size)]
         return self.finetune_parameters_gen(xy_train_gen=shuff, output_dim=output_dim, epochs=epochs)
 
     def finetune_parameters_gen(self, xy_train_gen, output_dim, epochs):
@@ -339,6 +347,11 @@ class SDAutoencoder(object):
             is the output dimension of the autoencoder stack, which is the dimension of the new feature
             space. The latter is the dimension of the y value space for classification. Ex: If the output
             should be binary, then the output_dim = 2."""
+            with tf.name_scope("softmax_variables"):
+                self.W = weight_variable(self.output_dim, output_dim, name="weights")
+                self.b = bias_variable(output_dim, initial_value=0, name="biases")
+                attach_variable_summaries(self.W, self.W.name, summ_list=summary_list)
+                attach_variable_summaries(self.b, self.b.name, summ_list=summary_list)
             with tf.name_scope("outputs"):
                 y_logits = tf.matmul(x_encoded, self.W) + self.b
                 with tf.name_scope("predicted"):
@@ -401,10 +414,11 @@ class SDAutoencoder(object):
                             "layer3_weights": sess.run(self.hidden_layers[2].get_weight_variable()), "weights": sess.run(self.W), "biases": sess.run(self.b)}
             return tuned_params
 
-    def evaluation(self, output_dim, test_data, test_label):
+    def evaluation(self, output_dim):
+        data = input_data.read_data_sets("data/MNIST", one_hot=True)
         # if batch_method == "random":
-        x_train = test_data
-        y_label = test_label
+        x_train = data.test.images
+        y_label = data.test.labels
         x = tf.placeholder(tf.float32, shape=[None, self.input_dim], name="raw_test_input")
         y_actual = tf.placeholder(tf.float32, shape=[None, output_dim], name="y_test_actual")
         x_encoded = self.get_encoded_input(x, depth=-1)  # Full depth encoding
@@ -453,67 +467,75 @@ def draw_weights(weights, name, N_COL, N_ROW, sub_factor, use_rondam):
                 # plt.imshow(data.reshape((28, 28)))
                 plt.tick_params(labelbottom="off")
                 plt.tick_params(labelleft="off")
+
+
     plt.savefig("result_weights_layer_"+name+".png")
     plt.show()
 
 
 if __name__ == '__main__':
-    pre_train_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/pre_train_set.npy'
-    target_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/target_set'
-    back_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/back_set'
-    bg_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/back_ground'
-
-    target_test_set_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/target_set_test'
-    back_test_set_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/back_set_test'
-    bg_test_set_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/back_ground_test'
-
-    pre_train_data, fine_tune_data, fine_tune_label = get_train_dataset(pre_train_path, target_path, back_path, bg_path)
-    test_data, test_label = get_test_dataset(target_test_set_path, back_test_set_path, bg_test_set_path)
-
-    # pre_train_data = pre_train_data[0:1000]
-    # fine_tune_data = fine_tune_data[0:1000]
-    # fine_tune_label = fine_tune_label[0:1000]
-    # print pre_train_data.shape, fine_tune_data.shape, fine_tune_label.shape
-    # print test_data.shape, test_label.shape
-    # # Start a TensorFlow session
+    # Start a TensorFlow session
     sess = tf.Session()
-    # # Initialize an unconfigured autoencoder with specified dimensions, etc.
-    sda = SDAutoencoder(3, dims=[25, 100, 64, 36, 16],
-                        activations=["relu", "relu", "relu", "relu"],
+
+    # Initialize an unconfigured autoencoder with specified dimensions, etc.
+    sda = SDAutoencoder(dims=[784, 576, 400, 225],
+                        activations=["relu", "relu", "relu"],
                         sess=sess,
                         noise=0.3)
-    saver = tf.train.Saver()
+
     # Pretrain weights and biases of each layer in the network.
-    start_time = time.time()
-    sda.pre_train_network(50, pre_train_data)
-    duration = time.time() - start_time
-    print('#########per_train cost (%.3f sec)' % (duration))
+    sda.pre_train_network(100)
     # Read in test y-values to softmax classifier.
-    start_time = time.time()
-    tuned_params = sda.finetune_parameters(epochs=100, output_dim=3, data=fine_tune_data, label=fine_tune_label)
-    duration = time.time() - start_time
-    print('########fine tune cost (%.3f sec)' % (duration))
-    sda.evaluation(3, test_data=test_data, test_label=test_label)
-    print tuned_params['layer1_weights']
-    # saver.save(sess, 'my-model', global_step=training_steps)
-    sda.save_variables('/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/model_sar_patch/model_all')
+    tuned_params = sda.finetune_parameters(epochs=100, output_dim=10)
+    sda.evaluation(10)
+
+    draw_weights(tuned_params['layer1_weights'], 'layer1', 10, 2, 30, True)
+    draw_weights(tuned_params['layer2_weights'], 'layer2', 10, 2, 30, True)
+    draw_weights(tuned_params['layer3_weights'], 'layer3', 10, 2, 30, True)
+    draw_weights(tuned_params['weights'], 'output', 5, 2, 0, False)
+    # Write to file the newly represented features.
+    # sda.write_encoded_input(filepath="data/transformed.csv", x_test_path=FLAGS.x_train_path)
+
+    # data = input_data.read_data_sets("data/MNIST", one_hot=True)
+    # temp_train = data.train.images
+    # sda.pre_train_layer(0, temp_train, 400)
+
+    # # Draw Encode/Decode Result
+    # print 'begin draw encode and decode'
+    # N_COL = 10
+    # N_ROW = 2
+    # plt.figure(figsize=(N_COL, N_ROW * 2.5))
+    # np.random.shuffle(temp_train)
+    # batches = [_ for _ in utilities.gen_batches(temp_train, FLAGS.batch_size)]
+    # batch_xs = batches[0]
+    # for row in range(N_ROW):
+    #     for col in range(N_COL):
+    #         i = row * N_COL + col
+    #         data = batch_xs[i:i + 1]
+    #         data = np.array(data)
+    #         # Draw Input Data(x)
+    #         plt.subplot(2 * N_ROW, N_COL, 2 * row * N_COL + col + 1)
+    #         plt.title('IN:%02d' % i)
+    #         plt.imshow(data.reshape((28, 28)), cmap="gray", clim=(0, 1.0), origin='upper')
+    #         # plt.imshow(data.reshape((28, 28)))
+    #         plt.tick_params(labelbottom="off")
+    #         plt.tick_params(labelleft="off")
     #
-    # # draw_weights(tuned_params['layer1_weights'], 'layer1', 10, 2, 30, True)
-    # # draw_weights(tuned_params['layer2_weights'], 'layer2', 10, 2, 30, True)
-    # # draw_weights(tuned_params['layer3_weights'], 'layer3', 10, 2, 30, True)
-    # # draw_weights(tuned_params['weights'], 'output', 5, 2, 0, False)
+    #         # Draw Output Data(y)
+    #         plt.subplot(2 * N_ROW, N_COL, 2 * row * N_COL + N_COL + col + 1)
+    #         plt.title('OUT:%02d' % i)
+    #         output = sda.hidden_layers[0].encode(data)
+    #         output = sda.hidden_layers[0].decode(output)
+    #         y_value = output.eval(session=sess)
+    #         # print y_value.shape
+    #         # plt.imshow(y_value.reshape((28, 28)))
+    #         plt.imshow(y_value.reshape((28, 28)), cmap="gray", clim=(0, 1.0), origin='upper')
+    #         plt.tick_params(labelbottom="off")
+    #         plt.tick_params(labelleft="off")
+    #
+    # plt.savefig("result.png")
+    # plt.show()
 
-
-
-    # # load saved model
-    # ckpt = tf.train.get_checkpoint_state(os.path.dirname('/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/model_sar_patch/checkpoint'))
-    # saver = tf.train.Saver()
-    # if ckpt and ckpt.model_checkpoint_path:
-    #     # Restores from checkpoint
-    #     saver.restore(sess, ckpt.model_checkpoint_path)
-    #     print ckpt.model_checkpoint_path
-    #     print sess.run(sda.hidden_layers[0].get_weight_variable())
-    # sda.evaluation(3, test_data=test_data, test_label=test_label)
 
 
 

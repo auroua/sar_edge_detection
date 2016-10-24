@@ -71,6 +71,41 @@ def generate_train_label_back_ground_data(pic_url, img_size, save_url):
     print label_data.shape
 
 
+def get_train_dataset(pre_train_url, target_url, back_url, bg_url):
+    pre_train_data = np.load(pre_train_url)
+    # print pre_train_data.shape
+    file = open(target_url)
+    target_data, target_label = pickle.load(file)
+    # print target_data.shape, target_label.shape
+    file = open(back_url)
+    back_data, back_label = pickle.load(file)
+    # print back_data.shape, back_label.shape
+    file = open(bg_url)
+    bg_data, bg_label = pickle.load(file)
+    # print bg_data.shape, bg_label.shape
+    train_set = np.vstack((pre_train_data, target_data, back_data, bg_data))
+    fine_tune_set = np.vstack((target_data, back_data, bg_data))
+    fine_tune_label = np.vstack((target_label, back_label, bg_label))
+    # print train_set.shape, fine_tune_set.shape, fine_tune_label.shape
+    return train_set, fine_tune_set, fine_tune_label
+
+
+def get_test_dataset(target_test_url, back_test_url, bg_test_url):
+    file = open(target_test_url)
+    target_test_data, target_test_label = pickle.load(file)
+    # print target_test_data.shape, target_test_label.shape
+    file = open(back_test_url)
+    back_test_data, back_test_label = pickle.load(file)
+    # print back_test_data.shape, back_test_label.shape
+    file = open(bg_test_url)
+    bg_test_data, bg_test_label = pickle.load(file)
+    # print bg_test_data.shape, bg_test_label.shape
+    test_set = np.vstack((target_test_data, back_test_data, bg_test_data))
+    test_label = np.vstack((target_test_label, back_test_label, bg_test_label))
+    # print test_set.shape, test_label.shape
+    return test_set, test_label
+
+
 if __name__ == '__main__':
     target_patch = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_5/target_patch/'
     back_patch = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_5/back_patch/'
@@ -97,7 +132,20 @@ if __name__ == '__main__':
 
     # generate_train_label_data(target_patch_test, 5, save_url+'target_set_test')
     # generate_train_label_back_data(back_patch_test, 5, save_url+'back_set_test')
-    generate_train_label_back_ground_data(back_ground_patch_test, 5, save_url+'back_ground_test')
+    # generate_train_label_back_ground_data(back_ground_patch_test, 5, save_url+'back_ground_test')
+
+
+    pre_train_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/pre_train_set.npy'
+    target_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/target_set'
+    back_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/back_set'
+    bg_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/back_ground'
+
+    target_test_set_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/target_set_test'
+    back_test_set_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/back_set_test'
+    bg_test_set_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/back_ground_test'
+
+    get_train_dataset(pre_train_path, target_path, back_path, bg_path)
+    get_test_dataset(target_test_set_path, back_test_set_path, bg_test_set_path)
 
 
 
