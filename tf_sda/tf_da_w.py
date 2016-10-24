@@ -22,6 +22,27 @@ flags.DEFINE_integer('epochs', 400, 'max epoch')
 flags.DEFINE_float('learning_rate', 0.001, 'learning rate')
 flags.DEFINE_float('prob', 0.5, 'drop out probability')
 
+#reference weight deacy in tensorflow
+# # Create your variables
+# weights = tf.get_variable('weights', collections=['variables'])
+#
+# with tf.variable_scope('weights_norm') as scope:
+#     weights_norm = tf.reduce_sum(
+#         input_tensor=WEIGHT_DECAY_FACTOR * tf.pack(
+#             [tf.nn.l2_loss(i) for i in tf.get_collection('weights')]
+#         ),
+#         name='weights_norm'
+#     )
+#
+# # Add the weight decay loss to another collection called losses
+# tf.add_to_collection('losses', weights_norm)
+#
+# # Add the other loss components to the collection losses
+# # ...
+#
+# # To calculate your total loss
+# tf.add_n(tf.get_collection('losses'), name='total_loss')
+
 
 class tf_daw(object):
     def __init__(self, weights, hbias, vbias, input1, input2, keep_prob, name_scope, activation):
