@@ -17,6 +17,19 @@ def getFiles(path):
     return filelist
 
 
+def getFiles_name(path):
+    '''获取目录下的文件的绝对路径,带文件名'''
+    filelist = []
+    FileNames = os.listdir(path)
+    if len(FileNames) > 0:
+       for fn in FileNames:
+            # fullfilename = os.path.join(path, fn)
+            # filelist.append(fn.split('/')[-1])
+            filelist.append(fn)
+
+    return filelist
+
+
 def getFiles_jpg(path):
     '''filter files that daesn't end with jpg'''
     filelist = []
@@ -29,6 +42,48 @@ def getFiles_jpg(path):
             filelist.append(fullfilename)
 
     return filelist
+
+def getFiles_flags(path, flags, exclude):
+    '''获取目录下的文件的绝对路径,带文件名'''
+    filelist = []
+    FileNames = os.listdir(path)
+    if len(FileNames) > 0:
+       for fn in FileNames:
+           if flags not in fn:
+               continue
+           if exclude not in fn:
+               fullfilename = os.path.join(path, fn)
+               filelist.append(fullfilename)
+
+    return filelist
+
+
+def getFiles_flags_back(path, flags, exclude):
+    '''获取目录下的文件的绝对路径,带文件名'''
+    filelist = []
+    FileNames = os.listdir(path)
+    if len(FileNames) > 0:
+       for fn in FileNames:
+           if flags not in fn:
+               continue
+           if exclude[0] not in fn and exclude[1] not in fn:
+               fullfilename = os.path.join(path, fn)
+               filelist.append(fullfilename)
+    return filelist
+
+
+def getFiles_flags_all(path, flags):
+    '''获取目录下的文件的绝对路径,带文件名'''
+    filelist = []
+    FileNames = os.listdir(path)
+    if len(FileNames) > 0:
+       for fn in FileNames:
+           if flags not in fn:
+               continue
+           fullfilename = os.path.join(path, fn)
+           filelist.append(fullfilename)
+    return filelist
+
 
 
 def  process_train_data():

@@ -4,7 +4,8 @@
 import xml.sax
 import cv2
 import numpy as np
-from theano_rbm.data_process import getFiles, getFiles_jpg
+from theano_rbm.data_process import getFiles, getFiles_name
+import os
 
 
 class XmlHandler(xml.sax.ContentHandler):
@@ -210,11 +211,13 @@ def after_prosses_img(img):
 def after_prosses_all(img):
     for i in range(img.shape[0]):
         for j in range(img.shape[1]):
-            if img[i, j] != 127:
+            if img[i, j] != 127 and img[i, j] != 255:
                 img[i, j] = 0
             if img[i, j] == 127:
                 # print i, j, img[i, j]
                 img[i, j] = 255
+            # if img[i, j]==255 and img[i-1, j]!=255 and img[i+1, j]!=255 and img[i-1, j-1] !=255 and img[i-1, j+1]!=255 and img[i+1, j-1]!=255 and img[i+1, j]!=255 and img[i+1, j+1]!=255:
+            #     img[i, j] = 0
 
 
 def save_target(handler, images, save_url, image_name):
@@ -247,19 +250,28 @@ def get_file_name(url):
 
 if __name__ == "__main__":
     save_url = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/'
+    save_test_url = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_5/test_counter/'
     img_url = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei/'
     xml_url = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/annoation_xml'
-    annoation_xml_list = getFiles(xml_url)
+    annotation_test_xml = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/annoation_test_xml/'
+    annoation_xml_list = getFiles(annotation_test_xml)
+    print annoation_xml_list
     # file_name_list = [get_file_name(filename) for filename in annoation_xml_list]
     for annoation_name in annoation_xml_list:
         filename = get_file_name(annoation_name)
         img_target = cv2.imread(img_url+filename+'.jpg', cv2.IMREAD_ANYDEPTH | cv2.IMREAD_ANYCOLOR)
         img_back = img_target.copy()
         handler = get_counter(annoation_name)
-        img_target = save_target(handler, img_target, save_url, filename+'_target.jpg')
-        img_back = save_back(handler, img_back, save_url, filename+'_back.jpg')
-        img_all = save_all(img_target, img_back,  save_url, filename+'_all.jpg')
-        # cv2.imshow('test', img_target)
-        # cv2.imshow('test', img_back)
-        # cv2.imshow('test', img_all)
-        # cv2.waitKey(0)
+        img_target = save_target(handler, img_target, save_test_url, filename+'_target.jpg')
+        img_back = save_back(handler, img_back, save_test_url, filename+'_back.jpg')
+        img_all = save_all(img_target, img_back,  save_test_url, filename+'_all.jpg')
+
+
+    # # remove duplicate files
+    # annoation_xml_list = getFiles_name(xml_url)
+    # annoation_test_list = getFiles_name(annotation_test_xml)
+    # for file in annoation_test_list:
+    #     if file in annoation_xml_list:
+    #         file_full_path = os.path.join(annotation_test_xml, file)
+    #         print file_full_path
+    #         os.remove(file_full_path)
