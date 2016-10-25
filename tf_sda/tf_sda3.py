@@ -7,6 +7,7 @@ from tensorflow.examples.tutorials.mnist import input_data
 from mstar_patch_batch_generator import get_train_dataset, get_test_dataset
 import os
 import time
+import cv2
 
 __version__ = '0.1'
 
@@ -219,7 +220,7 @@ class SDAutoencoder(object):
     def get_encoded_input(self, input_tensor, depth):
         depth = len(self.hidden_layers) if depth == -1 else depth
         for i in range(depth):
-            print 'get encode input hidden layers ', i
+            # print 'get encode input hidden layers ', i
             input_tensor = self.hidden_layers[i].encode(input_tensor)
         return input_tensor
 
@@ -247,6 +248,7 @@ class SDAutoencoder(object):
         print 'Finished pretraining of autoencoder network.'
 
     def pre_train_layer(self, depth, data, epoch):
+        self.pretrain_lr = 0.1
         sess = self.sess
         print 'Starting to pretrain layer %d.' % depth
         hidden_layer = self.hidden_layers[depth]
@@ -301,6 +303,9 @@ class SDAutoencoder(object):
                     if FLAGS.debug and step > 5:
                         break
                     step += 1
+                if epoch%5 == 0:
+                    if self.pretrain_lr <= 0.000001:
+                        self.pretrain_lr = self.pretrain_lr/2.0
             print("Finished pretraining of layer %d. Updated layer weights and biases." % depth)
 
     ##############
@@ -327,7 +332,7 @@ class SDAutoencoder(object):
         """An implementation of finetuning to support data feeding from generators."""
         sess = self.sess
         summary_list = []
-
+        self.finetune_lr = 0.1
         print("Starting to fine tune parameters of network.")
         with tf.name_scope("finetuning"):
             with tf.name_scope("inputs"):
@@ -396,6 +401,9 @@ class SDAutoencoder(object):
 
                     sess.run(train_step, feed_dict={x: batch_xs, y_actual: batch_ys})
                     step += 1
+                if epochs%5 == 0:
+                    if self.finetune_lr <= 0.000001:
+                        self.finetune_lr = self.finetune_lr/2.0
             print("Completed fine-tuning of parameters.")
             tuned_params = {"layer1_weights": sess.run(self.hidden_layers[0].get_weight_variable()), "layer2_weights": sess.run(self.hidden_layers[1].get_weight_variable()),
                             "layer3_weights": sess.run(self.hidden_layers[2].get_weight_variable()), "weights": sess.run(self.W), "biases": sess.run(self.b)}
@@ -414,6 +422,20 @@ class SDAutoencoder(object):
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
         print("test, batch accuracy: " ,
               sess.run(accuracy, feed_dict={x: x_train, y_actual: y_label}))
+
+
+    def get_label(self, test_data):
+        # if batch_method == "random":
+        x_train = test_data
+        x = tf.placeholder(tf.float32, shape=[None, self.input_dim], name="raw_test_input")
+        x_encoded = self.get_encoded_input(x, depth=-1)  # Full depth encoding
+        y_logits = tf.matmul(x_encoded, self.W) + self.b
+        y_pred = tf.nn.softmax(y_logits, name="y_pred")
+        pred_val = tf.argmax(y_pred, 1)
+        pred, value = sess.run([y_pred, pred_val], feed_dict={x: x_train})
+        # print("test, batch accuracy: " ,
+        #       sess.run([y_pred, pred_val], feed_dict={x: x_train}))
+        return pred, value
 
 
 def draw_weights(weights, name, N_COL, N_ROW, sub_factor, use_rondam):
@@ -485,18 +507,20 @@ if __name__ == '__main__':
     saver = tf.train.Saver()
     # Pretrain weights and biases of each layer in the network.
     start_time = time.time()
-    sda.pre_train_network(50, pre_train_data)
+    sda.pre_train_network(300, pre_train_data)
     duration = time.time() - start_time
     print('#########per_train cost (%.3f sec)' % (duration))
     # Read in test y-values to softmax classifier.
     start_time = time.time()
-    tuned_params = sda.finetune_parameters(epochs=100, output_dim=3, data=fine_tune_data, label=fine_tune_label)
+    tuned_params = sda.finetune_parameters(epochs=1000, output_dim=3, data=fine_tune_data, label=fine_tune_label)
     duration = time.time() - start_time
     print('########fine tune cost (%.3f sec)' % (duration))
     sda.evaluation(3, test_data=test_data, test_label=test_label)
     print tuned_params['layer1_weights']
     # saver.save(sess, 'my-model', global_step=training_steps)
     sda.save_variables('/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/model_sar_patch/model_all')
+
+
     #
     # # draw_weights(tuned_params['layer1_weights'], 'layer1', 10, 2, 30, True)
     # # draw_weights(tuned_params['layer2_weights'], 'layer2', 10, 2, 30, True)
@@ -504,17 +528,71 @@ if __name__ == '__main__':
     # # draw_weights(tuned_params['weights'], 'output', 5, 2, 0, False)
 
 
-
+    # img_url = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei/HB15020.018.jpg'
+    # PATCH_SIZE = 5
     # # load saved model
     # ckpt = tf.train.get_checkpoint_state(os.path.dirname('/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/model_sar_patch/checkpoint'))
     # saver = tf.train.Saver()
     # if ckpt and ckpt.model_checkpoint_path:
     #     # Restores from checkpoint
     #     saver.restore(sess, ckpt.model_checkpoint_path)
-    #     print ckpt.model_checkpoint_path
-    #     print sess.run(sda.hidden_layers[0].get_weight_variable())
+    #     # print ckpt.model_checkpoint_path
+    #     # print sess.run(sda.hidden_layers[0].get_weight_variable())
     # sda.evaluation(3, test_data=test_data, test_label=test_label)
+    #
+    # img_test = cv2.imread(img_url, cv2.IMREAD_ANYDEPTH | cv2.IMREAD_ANYCOLOR)
+    # # cv2.imshow('sar', img_test)
+    # # cv2.waitKey(0)
+    # print '==================================='
+    # patch = np.zeros((5, 5))
+    # total_data = np.zeros(((img_test.shape[0]-5)*(img_test.shape[1]-5), PATCH_SIZE*PATCH_SIZE), dtype=np.float32)
+    # values = np.zeros
+    # count = 0
+    # img_copy = img_test.copy()
+    #
+    # for i in range(img_copy.shape[0]):
+    #     for j in range(img_copy.shape[1]):
+    #         img_copy[i, j] = 0
+    #
+    # for i in range(img_copy.shape[0]-5):
+    #     for j in range(img_copy.shape[1]-5):
+    #         patch = img_copy[i:i+5, j:j+5]
+    #         patch = patch.reshape(1, 25)
+    #         _, value = sda.get_label(patch)
+    #         if value == 0:
+    #             img_copy[i, j] = 0
+    #         elif value == 1:
+    #             img_copy[i, j] = 127
+    #         else:
+    #             img_copy[i, j] = 255
 
+
+
+
+    # for i in range(img_test.shape[0]):
+    #     if i >= img_test.shape[0]-5:
+    #         break
+    #     for j in range(img_test.shape[1]):
+    #         if j >= img_test.shape[1]-5:
+    #             break
+    #         patch = img_test[i:i + PATCH_SIZE, j:j + PATCH_SIZE]
+    #         patch = patch.reshape(1, 25)
+    #         total_data[count, :] = patch
+    #         count += 1
+    #
+    # print total_data.shape
+    # pred, value = sda.get_label(total_data)
+    # print pred
+    # print value
+    # value_reshape = value.reshape(123, 123)
+    # print value_reshape
+    #
+    # img_copy = img_test.copy()
+    # img_copy[0:123, 0:123] = value_reshape
+    #
+    # img_copy = (img_copy/2.0)*255
+    # cv2.imshow('segment', img_copy)
+    # cv2.waitKey(0)
 
 
 
