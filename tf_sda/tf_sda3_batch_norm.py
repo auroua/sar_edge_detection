@@ -27,7 +27,7 @@ flags.DEFINE_boolean('debug', False, 'debug the system')
 flags.DEFINE_string('log_dir', 'model', 'the log dir')
 flags.DEFINE_float('deacy_factor', 0.3, 'neural networks weight deacy factors')
 flags.DEFINE_integer('train_set_size', 358101, 'neural networks weight deacy factors')
-flags.DEFINE_string('is_train', 'test', 'used for stage, option value is [pre_train, fine_tune, test]')
+flags.DEFINE_string('is_train', 'fine_tune', 'used for stage, option value is [pre_train, fine_tune, test]')
 flags.DEFINE_float('deacy', 0.95, 'batch_normalization weights mean average')
 flags.DEFINE_float('epsilon', 1e-3, 'batch_normalization weights mean average')
 
@@ -595,15 +595,21 @@ if __name__ == '__main__':
     target_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/25_25_new/target_patch'
     back_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/25_25_new/shadow_patch'
     bg_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/25_25_new/bg_patch'
+    bg_path_3 = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/25_25_new/bg_patch_3'
+    bg_path_5 = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/25_25_new/bg_patch_5'
+    bg_path_without_diliate = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/25_25_new/bg_without_diliate'
 
     target_test_set_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/25_25_new/target_test'
     back_test_set_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/25_25_new/shadow_test'
     bg_test_set_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/25_25_new/bg_test'
-    pre_train_data, fine_tune_data, fine_tune_label = get_train_dataset(pre_train_path, target_path, back_path, bg_path)
-    test_data, test_label = get_test_dataset(target_test_set_path, back_test_set_path, bg_test_set_path)
-    test_target_data, test_target_label = get_test_target_dataset(target_test_set_path, back_test_set_path, bg_test_set_path)
-    test_back_data, test_back_label = get_test_back_dataset(target_test_set_path, back_test_set_path, bg_test_set_path)
-    test_bg_data, test_bg_label = get_test_bg_dataset(target_test_set_path, back_test_set_path, bg_test_set_path)
+    bg_test_set_path_3 = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/25_25_new/bg_test_3'
+    bg_test_set_path_5 = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/25_25_new/bg_test_5'
+    bg_test_without_diliate = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/25_25_new/bg_test_without_diliate'
+    pre_train_data, fine_tune_data, fine_tune_label = get_train_dataset(pre_train_path, target_path, back_path, bg_path_without_diliate)
+    test_data, test_label = get_test_dataset(target_test_set_path, back_test_set_path, bg_test_without_diliate)
+    test_target_data, test_target_label = get_test_target_dataset(target_test_set_path, back_test_set_path, bg_test_without_diliate)
+    test_back_data, test_back_label = get_test_back_dataset(target_test_set_path, back_test_set_path, bg_test_without_diliate)
+    test_bg_data, test_bg_label = get_test_bg_dataset(target_test_set_path, back_test_set_path, bg_test_without_diliate)
 
     sess = tf.Session()
     # # Initialize an unconfigured autoencoder with specified dimensions, etc.
@@ -619,19 +625,23 @@ if __name__ == '__main__':
         duration = time.time() - start_time
         print('#########per_train cost (%.3f sec)' % (duration))
         # Read in test y-values to softmax classifier.
-        sda.save_variables('/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/model_sar_patch/pre_train/model_pre_train')
+        # sda.save_variables('/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/model_sar_patch/pre_train/model_pre_train')
+        # sda.save_variables('/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/model_sar_patch/pre_train_3/model_pre_train')
+        sda.save_variables('/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/model_sar_patch/pre_train_without_diliate/model_pre_train')
     elif FLAGS.is_train == 'fine_tune':
         PATCH_SIZE = 25
         # load saved model
-        ckpt = tf.train.get_checkpoint_state(os.path.dirname('/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/model_sar_patch/pre_train/checkpoint'))
+        ckpt = tf.train.get_checkpoint_state(os.path.dirname('/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/model_sar_patch/pre_train_without_diliate/checkpoint'))
         if ckpt and ckpt.model_checkpoint_path:
             # Restores from checkpoint
             saver.restore(sess, ckpt.model_checkpoint_path)
         tuned_params = sda.finetune_parameters(epochs=300, output_dim=3, data=fine_tune_data, label=fine_tune_label)
         sda.evaluation(3, test_data=test_data, test_label=test_label)
-        sda.save_variables('/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/model_sar_patch/fine_tune/model_fintune')
+        # sda.save_variables('/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/model_sar_patch/fine_tune/model_fintune')
+        # sda.save_variables('/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/model_sar_patch/fine_tune_3/model_fintune')
+        sda.save_variables('/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/model_sar_patch/fine_tune_without_diliate/model_fintune')
     elif FLAGS.is_train == 'test':
-        ckpt = tf.train.get_checkpoint_state(os.path.dirname('/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/model_sar_patch/fine_tune/checkpoint'))
+        ckpt = tf.train.get_checkpoint_state(os.path.dirname('/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/model_sar_patch/fine_tune_without_diliate/checkpoint'))
         if ckpt and ckpt.model_checkpoint_path:
             saver.restore(sess, ckpt.model_checkpoint_path)
         PATCH_SIZE = 25

@@ -28,6 +28,10 @@ def get_file_name_diliate(url):
     filename = url.split('/')[-1][:-17]
     return filename
 
+def get_file_name_diliate_3(url):
+    filename = url.split('/')[-1][:-15]
+    return filename
+
 def get_file_name_diliate_5(url):
     filename = url.split('/')[-1][:-15]
     return filename
@@ -142,7 +146,8 @@ def generate_patch_dialit_back(img_url, counter_url, patch_url, patch_size, coun
     patch_crop_size = 500
     for target_counter in target_counter_list:
         # file_name = get_file_name_diliate_5(target_counter)
-        file_name = get_file_name_diliate(target_counter)
+        # file_name = get_file_name_diliate_3(target_counter)
+        file_name = get_file_name_all(target_counter)
         print file_name
         img = cv2.imread(img_url+file_name+'.jpg', cv2.IMREAD_ANYDEPTH | cv2.IMREAD_ANYCOLOR)
         img_counter_target = cv2.imread(target_counter, cv2.IMREAD_ANYDEPTH | cv2.IMREAD_ANYCOLOR)
@@ -219,18 +224,24 @@ if __name__ == '__main__':
     PATCH_SIZE = 25
     counter_url = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/'
     img_url = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei/'
-    target_patch = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_25_new/target_patch/'
-    shadow_patch = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_25_new/shadow_patch/'
-    bg_patch = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_25_new/bg_patch/'
-    pre_train_patch = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_25_new/pre_train/'
+    target_patch = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_25_new/target_patch_3/'
+    shadow_patch = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_25_new/shadow_patch_3/'
+    bg_patch = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_25_new/bg_patch_3/'
+    bg_patch_5 = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_25_new/bg_patch_5/'
+    pre_train_patch = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_25_new/pre_train_3/'
     test_counter_url = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_25_new/test_counter/'
-    target_test = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_25_new/target_test/'
-    shadow_test = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_25_new/shadow_test/'
-    bg_test = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_25_new/bg_test/'
-    generate_patch(img_url, counter_url, target_patch, PATCH_SIZE, 'target', 'target_patch', '@1')
+    target_test = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_25_new/target_test_3/'
+    shadow_test = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_25_new/shadow_test_3/'
+    bg_test = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_25_new/bg_test_3/'
+    bg_test_5 = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_25_new/bg_test_5/'
+    bg_patch_without_diliate = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_25_new/bg_patch_without_diliate/'
+    bg_test_without_diliate = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_25_new/bg_test_without_diliate/'
+
+
+    # generate_patch(img_url, counter_url, target_patch, PATCH_SIZE, 'target', 'target_patch', '@1')
     # generate_patch_back(img_url, test_counter_url, shadow_test, PATCH_SIZE, 'back', ['back_patch', 'back_ground_patch'], '@2')
-    # generate_patch_dialit_back(img_url, test_counter_url, bg_test, PATCH_SIZE, '10_10diliate', '@4')
-    # generate_pre_train_patch(img_url, pre_train_patch, PATCH_SIZE)
-    FileNames = os.listdir(pre_train_patch)
+    generate_patch_dialit_back(img_url, test_counter_url, bg_test_without_diliate, PATCH_SIZE, 'all', '@4')
+    # generate_pre_train_patch(img_url, bg_patch_without_diliate, PATCH_SIZE)
+    FileNames = os.listdir(bg_test_without_diliate)
     print len(FileNames)
 
