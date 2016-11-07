@@ -85,6 +85,20 @@ def getFiles_flags_all(path, flags):
     return filelist
 
 
+def remove_flags_all(path, flags):
+    '''获取目录下的文件的绝对路径,带文件名'''
+    filelist = []
+    FileNames = os.listdir(path)
+    if len(FileNames) > 0:
+       for fn in FileNames:
+           if flags not in fn:
+               continue
+           fullfilename = os.path.join(path, fn)
+           print fullfilename
+           os.remove(fullfilename)
+    return filelist
+
+
 
 def  process_train_data():
     # pic_url = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_28*28/'
@@ -148,7 +162,9 @@ def  process_train_label_data():
 if __name__ == '__main__':
     # process_train_label_data()
     # # load data
-    process_train_data()
+    # process_train_data()
+    counter_url = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/'
+    remove_flags_all(counter_url, 'diliate')
     # data = np.load('f_total_data.npy')
     # print data.shape, data.dtype
     # mnist_resize()
