@@ -9,6 +9,7 @@ import os
 import time
 import cv2
 from sklearn.metrics import confusion_matrix
+from theano_rbm.data_process import getFiles
 
 __version__ = '0.1'
 
@@ -590,18 +591,6 @@ def draw_weights(weights, name, N_COL, N_ROW, sub_factor, use_rondam):
 
 
 if __name__ == '__main__':
-    # pre_train_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/pre_train_set.npy'
-    # target_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/target_set'
-    # back_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/back_set'
-    # bg_path_dialit = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/back_ground_dialit'
-    # bg_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/back_ground'
-    #
-    # target_test_set_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/target_set_test'
-    # back_test_set_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/back_set_test'
-    # bg_test_set_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/back_ground_test'
-    # bg_test_set_path_dialit = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/back_ground_dialit_test'
-
-
     pre_train_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/25_25_new/pre_train'
     target_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/25_25_new/target_patch'
     back_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/25_25_new/shadow_patch'
@@ -610,10 +599,7 @@ if __name__ == '__main__':
     target_test_set_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/25_25_new/target_test'
     back_test_set_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/25_25_new/shadow_test'
     bg_test_set_path = '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/patch_files/25_25_new/bg_test'
-
-    # pre_train_data, fine_tune_data, fine_tune_label = get_train_dataset(pre_train_path, target_path, back_path, bg_path)
     pre_train_data, fine_tune_data, fine_tune_label = get_train_dataset(pre_train_path, target_path, back_path, bg_path)
-    # test_data, test_label = get_test_dataset(target_test_set_path, back_test_set_path, bg_test_set_path)
     test_data, test_label = get_test_dataset(target_test_set_path, back_test_set_path, bg_test_set_path)
     test_target_data, test_target_label = get_test_target_dataset(target_test_set_path, back_test_set_path, bg_test_set_path)
     test_back_data, test_back_label = get_test_back_dataset(target_test_set_path, back_test_set_path, bg_test_set_path)
@@ -625,18 +611,6 @@ if __name__ == '__main__':
                         activations=["relu", "relu", "relu"],
                         sess=sess,
                         noise=0.3)
-
-    # sda = SDAutoencoder(3, dims=[25, 1000, 800, 700, 600, 300],
-    #                     activations=["relu", "relu", "relu", "relu", "relu"],
-    #                     sess=sess,
-    #                     noise=0.3)
-
-
-    # sda = SDAutoencoder(3, dims=[25, 500, 500, 1000, 300],
-    #                     activations=["relu", "relu", "relu", "relu"],
-    #                     sess=sess,
-    #                     noise=0.3)
-
     saver = tf.train.Saver()
 
     if FLAGS.is_train == 'pre_train':
@@ -645,74 +619,35 @@ if __name__ == '__main__':
         duration = time.time() - start_time
         print('#########per_train cost (%.3f sec)' % (duration))
         # Read in test y-values to softmax classifier.
-        # start_time = time.time()
         sda.save_variables('/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/model_sar_patch/pre_train/model_pre_train')
     elif FLAGS.is_train == 'fine_tune':
         PATCH_SIZE = 25
-        # # load saved model
+        # load saved model
         ckpt = tf.train.get_checkpoint_state(os.path.dirname('/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/model_sar_patch/pre_train/checkpoint'))
-        # saver = tf.train.Saver()
         if ckpt and ckpt.model_checkpoint_path:
             # Restores from checkpoint
             saver.restore(sess, ckpt.model_checkpoint_path)
-            # print ckpt.model_checkpoint_path
-            # print sess.run(sda.hidden_layers[0].get_weight_variable())
-        # sda.evaluation(3, test_data=test_data, test_label=test_label)
         tuned_params = sda.finetune_parameters(epochs=300, output_dim=3, data=fine_tune_data, label=fine_tune_label)
         sda.evaluation(3, test_data=test_data, test_label=test_label)
         sda.save_variables('/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/model_sar_patch/fine_tune/model_fintune')
     elif FLAGS.is_train == 'test':
-        # # load saved model
-        # sess.run(tf.initialize_all_variables())
         ckpt = tf.train.get_checkpoint_state(os.path.dirname('/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/tf_sda/model_sar_patch/fine_tune/checkpoint'))
         if ckpt and ckpt.model_checkpoint_path:
-            # Restores from checkpoint
             saver.restore(sess, ckpt.model_checkpoint_path)
-        # pred_val = sda.evaluation(3, test_data=test_data, test_label=test_label)
-        # sda.evaluation(3, test_data=test_target_data, test_label=test_target_label)
-        # sda.evaluation(3, test_data=test_back_data, test_label=test_back_label)
-        # sda.evaluation(3, test_data=test_bg_data, test_label=test_bg_label)
-        # true_labels = [np.argmax(label) for label in test_label]
-        # pred_labels = [np.argmax(label) for label in pred_val]
-        # print_confusion_matrix(true_labels, pred_labels, 3)
-
         PATCH_SIZE = 25
-        img_url = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei/HB03848.015.jpg'
+        # img_url = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei/HB03848.015.jpg'
+        img_url = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei/HB03333.015.jpg'
         img_test = cv2.imread(img_url, cv2.IMREAD_ANYDEPTH | cv2.IMREAD_ANYCOLOR)
-        # cv2.imshow('sar', img_test)
-        # cv2.waitKey(0)
-        # print '==================================='
-        # patch = np.zeros((PATCH_SIZE, PATCH_SIZE))
-        # print img_test.shape[0]-12, img_test.shape[1]-12
-        # #
-        # print '------------------------'
         total_data = np.zeros((104*104, PATCH_SIZE*PATCH_SIZE), dtype=np.float32)
         count = 0
         img_test2 = img_test.astype(np.float32)
         img_test2 /= 255
-        # cv2.imshow('sar', img_test2)
-        # cv2.waitKey(0)
         img_copy = img_test2.copy()
 
         for i in range(img_copy.shape[0]):
             for j in range(img_copy.shape[1]):
                 img_copy[i, j] = 1.0
-        # #
         print 'after initialization'
-        # # # for i in range(img_copy.shape[0]-5):
-        # # #     for j in range(img_copy.shape[1]-5):
-        # # #         patch = img_copy[i:i+5, j:j+5]
-        # # #         patch = patch.reshape(1, 25)
-        # # #         _, value = sda.get_label(patch)
-        # # #         if value == 0:
-        # # #             img_copy[i+2, j+2] = 0
-        # # #         elif value == 1:
-        # # #             img_copy[i+2, j+2] = 127
-        # # #         else:
-        # # #             img_copy[i+2, j+2] = 255
-        # #
-        # #
-        print img_test2.shape
         for i in range(12, img_test2.shape[0]-13):
             for j in range(12, img_test2.shape[1]-13):
                 patch = img_test2[i-12:i+13, j-12:j+13]
@@ -721,28 +656,12 @@ if __name__ == '__main__':
                 count += 1
         print 'total_data size :', len(total_data)
         pred, value = sda.get_label(total_data)
-        print value.shape, pred.shape
-        print pred
-        print value
-        # print pred
-        value_reshape = value.reshape(104, 104)
-        #
-        # # img_copy = img_test.copy()
-        # # for i in range(img_copy.shape[0]-4):
-        # #     for j in range(img_copy.shape[1]-4):
-        # #         img_copy[i+2, j+2] = value[i*j]
-        #
-        img_copy[12:116, 12:116] = value_reshape
-        #
+
+        count = 0
+        for i in range(12, img_test2.shape[0]-13):
+            for j in range(12, img_test2.shape[1]-13):
+                img_copy[i, j] = value[count]
+                count += 1
         img_copy /= 2
-        # img_copy *= 255
         cv2.imshow('segment', img_copy)
         cv2.waitKey(0)
-
-        # sda.evaluation(3, test_data=test_data, test_label=test_label)
-        # sda.evaluation(3, test_data=test_target_data, test_label=test_target_label)
-        # print test_target_label
-        # sda.evaluation(3, test_data=test_back_data, test_label=test_back_label)
-        # print test_back_label
-        # sda.evaluation(3, test_data=test_bg_data, test_label=test_bg_label)
-        # print test_bg_label

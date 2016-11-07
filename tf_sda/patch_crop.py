@@ -227,7 +227,7 @@ if __name__ == '__main__':
     target_test = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_25_new/target_test/'
     shadow_test = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_25_new/shadow_test/'
     bg_test = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_25_new/bg_test/'
-    # generate_patch(img_url, counter_url, target_patch, PATCH_SIZE, 'target', 'target_patch', '@1')
+    generate_patch(img_url, counter_url, target_patch, PATCH_SIZE, 'target', 'target_patch', '@1')
     # generate_patch_back(img_url, test_counter_url, shadow_test, PATCH_SIZE, 'back', ['back_patch', 'back_ground_patch'], '@2')
     # generate_patch_dialit_back(img_url, test_counter_url, bg_test, PATCH_SIZE, '10_10diliate', '@4')
     # generate_pre_train_patch(img_url, pre_train_patch, PATCH_SIZE)
