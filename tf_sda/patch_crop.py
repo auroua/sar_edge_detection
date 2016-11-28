@@ -169,14 +169,14 @@ def generate_patch_dialit_back(img_url, counter_url, patch_url, patch_size, coun
 
 
 
-def generate_pre_train_patch(img_url, patch_url, patch_size):
+def generate_pre_train_patch(img_url, patch_url, patch_size, CROP_PRE_IMAGE):
     """generate img patches from original image
     :param img_url: A string, the path to image.
     :param patch_url: A String, the the patch to save patches.
     :param patch_size: An int, the patch size
     :return: null.
     """
-    CROP_PRE_IMAGE = 100
+    # CROP_PRE_IMAGE = 100
     target_counter_list = getFiles_jpg(img_url)
     # print target_counter_list
     patches = np.zeros([patch_size, patch_size])
@@ -191,6 +191,7 @@ def generate_pre_train_patch(img_url, patch_url, patch_size):
             startx = b - (patch_size // 2)
             patches = img[starty:starty + patch_size, startx:startx + patch_size]
             cv2.imwrite(patch_url + file_name + '_' + str(a) + '_' + str(b) + '.jpg', patches)
+
 
 
 if __name__ == '__main__':
@@ -237,11 +238,15 @@ if __name__ == '__main__':
     bg_patch_without_diliate = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_25_new/bg_patch_without_diliate/'
     bg_test_without_diliate = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_25_new/bg_test_without_diliate/'
 
+    big_image_url = '/home/aurora/hdd/workspace/data/sar_real_data/'
+    pre_train_big_image = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_25_new/pre_train_big_image/'
+
 
     # generate_patch(img_url, counter_url, target_patch, PATCH_SIZE, 'target', 'target_patch', '@1')
     # generate_patch_back(img_url, test_counter_url, shadow_test, PATCH_SIZE, 'back', ['back_patch', 'back_ground_patch'], '@2')
-    generate_patch_dialit_back(img_url, test_counter_url, bg_test_without_diliate, PATCH_SIZE, 'all', '@4')
+    # generate_patch_dialit_back(img_url, test_counter_url, bg_test_without_diliate, PATCH_SIZE, 'all', '@4')
     # generate_pre_train_patch(img_url, bg_patch_without_diliate, PATCH_SIZE)
-    FileNames = os.listdir(bg_test_without_diliate)
+    generate_pre_train_patch(big_image_url, pre_train_big_image, PATCH_SIZE, 50000)
+    FileNames = os.listdir(pre_train_big_image)
     print len(FileNames)
 

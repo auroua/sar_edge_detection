@@ -58,6 +58,7 @@ def generate_train_label_back_ground_data(pic_url, img_size, save_url):
     total_data = np.zeros((len(files), img_size*img_size), dtype=np.float32)
     for index, path in enumerate(files):
         img = cv2.imread(path, cv2.IMREAD_ANYCOLOR | cv2.IMREAD_ANYDEPTH)
+        # print img.shape
         if img is None:
             print path
             continue
@@ -87,6 +88,30 @@ def get_train_dataset(pre_train_url, target_url, back_url, bg_url):
     bg_data, bg_label = pickle.load(file)
     # print bg_data.shape, bg_label.shape
     train_set = np.vstack((pre_train_data, target_data, back_data, bg_data))
+    fine_tune_set = np.vstack((target_data, back_data, bg_data))
+    fine_tune_label = np.vstack((target_label, back_label, bg_label))
+    # print train_set.shape, fine_tune_set.shape, fine_tune_label.shape
+    return train_set, fine_tune_set, fine_tune_label
+
+
+def get_train_dataset_2(pre_train_url, pre_train_url_2, target_url, back_url, bg_url):
+    file = open(pre_train_url)
+    pre_train_data, pre_train_2 = pickle.load(file)
+    # print '@@@@@@@@@@@@@@@@@@@@@@@@@@@@@2'
+    # print pre_train_data.shape, pre_train_2.shape
+    file = open(pre_train_url_2)
+    pre_train_data_big_img_data, pre_train_big_img = pickle.load(file)
+
+    file = open(target_url)
+    target_data, target_label = pickle.load(file)
+    # print target_data.shape, target_label.shape
+    file = open(back_url)
+    back_data, back_label = pickle.load(file)
+    # print back_data.shape, back_label.shape
+    file = open(bg_url)
+    bg_data, bg_label = pickle.load(file)
+    # print bg_data.shape, bg_label.shape
+    train_set = np.vstack((pre_train_data, pre_train_data_big_img_data, target_data, back_data, bg_data))
     fine_tune_set = np.vstack((target_data, back_data, bg_data))
     fine_tune_label = np.vstack((target_label, back_label, bg_label))
     # print train_set.shape, fine_tune_set.shape, fine_tune_label.shape
@@ -210,7 +235,11 @@ if __name__ == '__main__':
 
     bg_without_diliate = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_25_new/bg_patch_without_diliate/'
     bg_test_without_diliate = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_25_new/bg_test_without_diliate/'
+
+    big_image_url = '/home/aurora/hdd/workspace/data/sar_real_data/'
+    pre_train_big_image = '/home/aurora/hdd/workspace/data/MSTAR_data_liang_processed/target_chips_128x128_normalized_wei_counter/patch_size_25_new/pre_train_big_image/'
+
     # generate_train_label_data(target_test, 25, save_url + 'target_test')
     # generate_train_label_back_data(shadow_test, 25, save_url + 'shadow_test')
-    generate_train_label_back_ground_data(bg_test_without_diliate, 25, save_url+'bg_test_without_diliate')
-    # generate_train_label_back_ground_data(pre_train_patch, 25, save_url+'pre_train')
+    # generate_train_label_back_ground_data(bg_test_without_diliate, 25, save_url+'bg_test_without_diliate')
+    generate_train_label_back_ground_data(pre_train_big_image, 25, save_url+'pre_train_big_image')

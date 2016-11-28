@@ -7,12 +7,12 @@ import os
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
-flags.DEFINE_string('phase', 'test', 'option for this is [train, test]')
+flags.DEFINE_string('phase', 'train', 'option for this is [train, test]')
 flags.DEFINE_integer('batch_size', 10, 'the batch size for training')
 flags.DEFINE_string('ckpt_dir', '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/alexnet/model/alex', 'the path to checkpoint')
-flags.DEFINE_string('ckpt_dir_test', '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/alexnet/model/alex.checkpoint', 'the path to checkpoint')
+flags.DEFINE_string('ckpt_dir_test', '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/alexnet/model/checkpoint', 'the path to checkpoint')
 flags.DEFINE_string('logs_dir', '/home/aurora/hdd/workspace/PycharmProjects/sar_edge_detection/alexnet/logs/', 'the path to checkpoint')
-flags.DEFINE_float('keep_prob', 0.5, 'keep_prob value ')
+flags.DEFINE_float('keep_prob', 0.3, 'keep_prob value ')
 
 # def dense_to_one_hot(labels_dense, num_classes):
 #   """Convert class labels from scalars to one-hot vectors."""
@@ -71,8 +71,8 @@ def write_records_file(dataset, record_location, sess, labels):
 
 
 def load_image():
-    filenames = tf.train.match_filenames_once("/home/aurora/hdd/workspace/data/imagenet_dog/record_data/training2/*.tfrecords")
-    filename_queue = tf.train.string_input_producer(filenames, num_epochs=1)
+    filenames = tf.train.match_filenames_once("/home/aurora/hdd/workspace/data/imagenet_dog/record_data/test/train/*.tfrecords")
+    filename_queue = tf.train.string_input_producer(filenames, num_epochs=10)
     reader = tf.TFRecordReader()
     _, serialized = reader.read(filename_queue)
     features = tf.parse_single_example(
@@ -95,8 +95,8 @@ def load_image():
 
 
 def load_image_test():
-    filenames = tf.train.match_filenames_once("/home/aurora/hdd/workspace/data/imagenet_dog/record_data/testing2/*.tfrecords")
-    filename_queue = tf.train.string_input_producer(filenames, num_epochs=1)
+    filenames = tf.train.match_filenames_once("/home/aurora/hdd/workspace/data/imagenet_dog/record_data/test/test/*.tfrecords")
+    filename_queue = tf.train.string_input_producer(filenames, num_epochs=10)
     reader = tf.TFRecordReader()
     _, serialized = reader.read(filename_queue)
     features = tf.parse_single_example(
@@ -153,10 +153,14 @@ def inference(image_batche):
     h_pool2 = max_pool(h_conv2)
 
     # conv3
+    conv3_w = cnn_weights([3, 3, 64, 128])
+    conv3_b = cnn_bias([128])
+    h_conv3 = tf.nn.relu(conv2d(h_pool2, conv3_w)+conv3_b)
+    h_pool3 = max_pool(h_conv3)
 
-    # fc1
-    h_pool2_flat = tf.reshape(h_pool2, [-1, 63*38*64])
-    fc1_w = cnn_weights([63*38*64, 1024])
+    # # fc1
+    h_pool2_flat = tf.reshape(h_pool3, [-1, 32*19*128])
+    fc1_w = cnn_weights([32*19*128, 1024])
     fc1_b = cnn_bias([1024])
     fc1_logit = tf.nn.relu(tf.matmul(h_pool2_flat, fc1_w) + fc1_b)
     fc1_output = tf.nn.dropout(fc1_logit, keep_prob=FLAGS.keep_prob)
@@ -169,8 +173,6 @@ def inference(image_batche):
 
 
 def gen_record_files(url):
-    labels = list(map(lambda filename: filename.split('/')[-1],
-                      glob.glob('/home/aurora/hdd/workspace/data/imagenet_dog/Images/*')))
     image_filenames = glob.glob(url)
     training_dataset = defaultdict(list)
     testing_dataset = defaultdict(list)
@@ -186,24 +188,18 @@ def gen_record_files(url):
         assert round(breed_testing_count/(breed_training_count+breed_testing_count), 2) > 0.18, "Not enough data"
     # write_records_file(training_dataset, '/home/aurora/hdd/workspace/data/imagenet_dog/record_data/traing2/', sess, labels)
     # write_records_file(testing_dataset, '/home/aurora/hdd/workspace/data/imagenet_dog/record_data/testing2', sess, labels)
-    #write_records_file(training_dataset, '/home/aurora/hdd/workspace/data/imagenet_dog/record_data/traing2/', sess,labels)
-    write_records_file(testing_dataset, '/home/aurora/hdd/workspace/data/imagenet_dog/record_data/test/test', sess, labels)
+    #write_records_file(training_dataset, '/home/aurora/hdd/workspace/data/imagenet_dog/record_data/test/train', sess,labels)
+    #write_records_file(testing_dataset, '/home/aurora/hdd/workspace/data/imagenet_dog/record_data/test/test', sess, labels)
 
 if __name__ == '__main__':
-    url = '/home/aurora/hdd/workspace/data/imagenet_dog/Images/n02*/*.jpg'
-    # keep_prob = tf.placeholder(dtype=tf.float32, shape=[], name='prob')
+    #url = '/home/aurora/hdd/workspace/data/imagenet_dog/Images/n02*/*.jpg'
     image_batches, label_batches = load_image()
     # image_batches, label_batches = load_image_test()
     logit = inference(image_batches)
-    # if FLAGS.phase == 'test':
-    #     image_batches = None
-    #     label_batches = None
-    #     logit = None
-    #     image_batches, label_batches = load_image_test()
-    #     logit = inference(image_batches)
+    print logit
     loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logit, label_batches))
     tf.scalar_summary('cross_entropy', loss)
-    train_op = tf.train.AdamOptimizer(1e-4).minimize(loss)
+    train_op = tf.train.AdamOptimizer(0.01).minimize(loss)
     sess = tf.Session()
     # graph writer
     merged_summary = tf.merge_all_summaries()
@@ -218,12 +214,15 @@ if __name__ == '__main__':
     count = 0
     real_accuracy = 0
     sum_accuracy = 0
+    max_index = tf.argmax(label_batches, 1)
     try:
         if FLAGS.phase == 'train':
             while not coord.should_stop():
                 count += 1
                 # Run training steps or whatever
                 sess.run(train_op)
+                logit_values = sess.run(logit)
+                # print logit_values.shape
                 if count%100 == 0:
                     real_loss, merged = sess.run([loss, merged_summary])
                     print("Step %d, loss = %f" % (count, real_loss))
@@ -237,7 +236,11 @@ if __name__ == '__main__':
                 saver.restore(sess, ckpt.model_checkpoint_path)
                 while not coord.should_stop():
                     count += 1
-                    logit_val = sess.run(logit)
+                    logit_val = sess.run(tf.argmax(tf.nn.softmax(logit), 1))
+                    print logit_val
+                    max_index_val = sess.run(max_index)
+                    print max_index_val
+                    print '------------'
                     # accuracy = tf.reduce_sum(tf.cast(tf.equal(tf.argmax(logit, 1), tf.argmax(label_batches, 1)), tf.float32))
                     # real_accuracy = sess.run(accuracy)
                     # sum_accuracy = sum_accuracy + real_accuracy
@@ -245,7 +248,7 @@ if __name__ == '__main__':
     except tf.errors.OutOfRangeError:
         print('Done training -- epoch limit reached')
         if FLAGS.phase == 'train':
-            saver.save(sess, FLAGS.ckpt_dir)
+            # saver.save(sess, FLAGS.ckpt_dir)
             print count
         elif FLAGS.phase == 'test':
             print 'test accuracy is ', sum_accuracy, count, sum_accuracy/count*FLAGS.batch_size
